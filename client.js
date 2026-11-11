@@ -3003,10 +3003,34 @@ window.__ModuleLoader__.load({
         border-color: color-mix(in srgb, #7f9dff 34%, var(--dsw-alias-border-l1));
         background: color-mix(in srgb, #7f9dff 12%, transparent);
       }
+      /* The tier pill takes the tier colour; the chip itself takes the path hue. */
+      .dq-chip-class[data-tier="0"] { --tier-tone: #6fd6a0; }
+      .dq-chip-class[data-tier="1"] { --tier-tone: #4fd1c5; }
+      .dq-chip-class[data-tier="2"] { --tier-tone: #7f9dff; }
+      .dq-chip-class[data-tier="3"] { --tier-tone: #b07fff; }
+      .dq-chip-class[data-tier="4"] { --tier-tone: #ff9a6b; }
+      .dq-chip-class[data-tier="5"] { --tier-tone: #f2c14e; }
+      .dq-chip-class[data-tier="6"] { --tier-tone: #ff7ad9; }
+      .dq-chip-class[data-tier="7"] { --tier-tone: #7cf0ff; }
+      .dq-chip-class[data-tier] {
+        border-color: color-mix(in srgb, var(--tier-tone, #7f9dff) 42%, var(--dsw-alias-border-l1));
+        background: color-mix(in srgb, var(--tier-tone, #7f9dff) 13%, transparent);
+      }
+      .dq-chip-class[data-path="novice"] { color: #cdbfff; }
+      .dq-chip-class[data-path="ranger"] { color: #7fe6dc; }
+      .dq-chip-class[data-path="artificer"] { color: #ffd575; }
+      .dq-chip-class[data-path="scholar"] { color: #a9c0ff; }
+      .dq-chip-class[data-path="commander"] { color: #c9a6ff; }
+      .dq-chip-class[data-path="debugger"] { color: #8ee6b4; }
+      .dq-chip-class[data-tier="5"] { box-shadow: 0 0 12px color-mix(in srgb, #f2c14e 32%, transparent); }
+      .dq-chip-class[data-tier="6"] { box-shadow: 0 0 14px color-mix(in srgb, #ff7ad9 36%, transparent); }
+      .dq-chip-class[data-tier="7"] { box-shadow: 0 0 16px color-mix(in srgb, #7cf0ff 40%, transparent); }
       .dq-chip-tier {
         margin-left: 2px; padding: 0 5px; border-radius: 5px;
         font-size: 9px; font-weight: 600;
-        background: color-mix(in srgb, #7f9dff 22%, transparent);
+        background: color-mix(in srgb, var(--tier-tone, #7f9dff) 22%, transparent);
+        color: var(--tier-tone, #8fb0ff);
+        border: 1px solid color-mix(in srgb, var(--tier-tone, #7f9dff) 34%, transparent);
       }
       .dq-chip-season {
         color: var(--dsw-alias-state-warn-primary);
@@ -6114,10 +6138,14 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'dq-title-spark', 'aria-hidden': true }, '✦'),
                   h('span', null, title)),
                 h('div', { className: 'dq-hero-class' },
-                  h('span', { className: 'dq-chip dq-chip-class' },
-                    h('span', { 'aria-hidden': true }, classMeta.glyph),
-                    h('b', null, t(`class.${player.class.id}.name`)),
-                    h('span', { className: 'dq-chip-tier' }, t(`class.tier.${player.class.tier}`))),
+                  h('span', {
+                    className: 'dq-chip dq-chip-class',
+                    'data-tier': player.class.tier,
+                    'data-path': player.class.id,
+                  },
+                  h('span', { 'aria-hidden': true }, classMeta.glyph),
+                  h('b', null, t(`class.${player.class.id}.name`)),
+                  h('span', { className: 'dq-chip-tier' }, t(`class.tier.${player.class.tier}`))),
                   h('span', { className: 'dq-chip dq-chip-season' },
                     h('span', { 'aria-hidden': true }, SEASON_THEME_META[data.season.theme]?.glyph || '✦'),
                     t('season.label', {
