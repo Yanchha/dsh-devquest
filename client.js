@@ -1274,7 +1274,7 @@ window.__ModuleLoader__.load({
       'synth.pieces': '（{pieces} 种）',
       'synth.top': '已达顶阶',
       'synth.none': '还没有任何装备可用来合成',
-      'synth.next': '→ {rarity}武器',
+      'synth.next': '→ {rarity}{slot}',
       'synth.button': '合成 ×{count}',
       'synth.result': '合成成功：{name}',
       'synth.refund': '退回 {coins} 星币',
@@ -2137,7 +2137,7 @@ window.__ModuleLoader__.load({
       'synth.pieces': '({pieces} kinds)',
       'synth.top': 'Top tier',
       'synth.none': 'Nothing to fuse yet',
-      'synth.next': '→ {rarity} weapon',
+      'synth.next': '→ {rarity} {slot}',
       'synth.button': 'Fuse ×{count}',
       'synth.result': 'Synthesised: {name}',
       'synth.refund': 'Refunded {coins} coins',
@@ -6458,7 +6458,7 @@ window.__ModuleLoader__.load({
                     h('span', { className: 'dq-enhance-pieces' }, t('synth.pieces', { pieces: row.pieces }))),
                   h('span', { className: 'dq-enhance-power' },
                     NEXT_RARITY[row.rarity]
-                      ? t('synth.next', { rarity: t(`ach.rarity.${NEXT_RARITY[row.rarity]}`) })
+                      ? t('synth.next', { rarity: t(`ach.rarity.${NEXT_RARITY[row.rarity]}`), slot: t(`gear.${synthSlot}`) })
                       : t('synth.top')),
                   h('button', {
                     type: 'button',
