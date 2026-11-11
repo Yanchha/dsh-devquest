@@ -189,6 +189,7 @@ const GEAR_SIGNATURES = new Set([
 // Synthesis: five copies of one piece fuse into a random weapon of the next
 // rarity. Ancient and divine gear can only be reached this way.
 const SYNTH_COPIES = 5
+const SYNTH_SLOTS = ['weapon', 'armor', 'charm']
 const RARITY_LADDER = ['common', 'rare', 'epic', 'legendary', 'mythic', 'red', 'ancient', 'divine', 'transcendent']
 const SYNTH_ONLY = new Set(['ancient', 'divine'])
 const SEASON_ONLY = new Set(['red'])
@@ -2106,19 +2107,20 @@ function applyAction(state, payload) {
     }
   }
   if (action === 'synthesize-gear') {
-    // Fusion works on a rarity, not on one piece: any five items of the same
-    // tier can be melted into one random weapon of the next tier.
+    // Fusion is per slot: five weapons make a weapon, five cores make a core.
     const requested = String(payload?.rarity || '')
+    const slot = String(payload?.slot || '')
+    if (!SYNTH_SLOTS.includes(slot)) return fail(state, 'unknown-slot')
     const item = GEAR_BY_ID[String(payload?.id || '')]
     const rarity = RARITY_LADDER.includes(requested) ? requested : (item?.rarity || '')
     const step = RARITY_LADDER.indexOf(rarity)
     if (step < 0) return fail(state, 'unknown-rarity')
     const nextRarity = RARITY_LADDER[step + 1]
     if (!nextRarity || nextRarity === 'transcendent') return fail(state, 'max-rarity')
-    const pool = GEAR_CATALOG.filter(entry => entry.rarity === nextRarity && entry.slot === 'weapon')
+    const pool = GEAR_CATALOG.filter(entry => entry.rarity === nextRarity && entry.slot === slot)
     if (!pool.length) return fail(state, 'no-target')
     const entries = state.gear.owned
-      .filter(id => GEAR_BY_ID[id] && GEAR_BY_ID[id].rarity === rarity)
+      .filter(id => GEAR_BY_ID[id] && GEAR_BY_ID[id].rarity === rarity && GEAR_BY_ID[id].slot === slot)
       .map(id => ({
         id,
         count: Math.max(1, Number(state.gear.count?.[id]) || 1),

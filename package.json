@@ -1,10 +1,16 @@
 {
   "name": "@local/dsh-devquest",
-  "version": "7.3.0",
+  "version": "7.4.0",
   "private": true,
   "type": "module",
   "license": "MIT",
-  "keywords": ["dsh", "dsh-plugin", "cordis", "gamification", "rpg"],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "gamification",
+    "rpg"
+  ],
   "description": "Turn agent turns, tool calls and lines of code into an RPG progression with a pixel battle arena, gear, chests, daily and season bosses, achievements and a season shop.",
   "engines": {
     "node": ">=20"

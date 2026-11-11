@@ -1270,7 +1270,7 @@ window.__ModuleLoader__.load({
       'enhance.max': '已满级',
       'enhance.success': '{name} 强化成功',
       'synth.title': '合成',
-      'synth.hint': '同稀有度任意 5 件 → 1 件下一稀有度的随机武器；优先消耗多余的副本，被吃掉的装备会退回强化/进阶费用。',
+      'synth.hint': '同一部位、同一稀有度任意 5 件 → 1 件下一稀有度的同部位装备；优先消耗多余副本，被吃掉的装备会退回强化/进阶费用。',
       'synth.pieces': '（{pieces} 种）',
       'synth.top': '已达顶阶',
       'synth.none': '还没有任何装备可用来合成',
@@ -1278,7 +1278,8 @@ window.__ModuleLoader__.load({
       'synth.button': '合成 ×{count}',
       'synth.result': '合成成功：{name}',
       'synth.refund': '退回 {coins} 星币',
-      'toast.error.not-enough-copies': '同名装备不够 5 件。',
+      'toast.error.not-enough-copies': '同部位同稀有度的装备不够 5 件。',
+      'toast.error.unknown-slot': '这个部位不能合成。',
       'toast.error.max-rarity': '已经是最高稀有度了。',
       'toast.error.no-target': '没有可合成的目标。',
       'points.title': '成就点',
@@ -2132,7 +2133,7 @@ window.__ModuleLoader__.load({
       'enhance.max': 'Maxed',
       'enhance.success': '{name} enhanced',
       'synth.title': 'Synthesis',
-      'synth.hint': 'Any five items of one rarity fuse into a random weapon of the next rarity; spare copies go first and consumed pieces refund their enhancement and ascension coins.',
+      'synth.hint': 'Any five items of the same slot and rarity fuse into one item of the next rarity in that slot; spare copies go first and consumed pieces refund their enhancement coins.',
       'synth.pieces': '({pieces} kinds)',
       'synth.top': 'Top tier',
       'synth.none': 'Nothing to fuse yet',
@@ -2140,7 +2141,8 @@ window.__ModuleLoader__.load({
       'synth.button': 'Fuse ×{count}',
       'synth.result': 'Synthesised: {name}',
       'synth.refund': 'Refunded {coins} coins',
-      'toast.error.not-enough-copies': 'You need five copies of the same piece.',
+      'toast.error.not-enough-copies': 'You need five items of that slot and rarity.',
+      'toast.error.unknown-slot': 'That slot cannot be fused.',
       'toast.error.max-rarity': 'Already the highest rarity.',
       'toast.error.no-target': 'No valid target.',
       'points.title': 'Achievement points',
@@ -3763,6 +3765,20 @@ window.__ModuleLoader__.load({
       .dq-pick[data-equipped="true"] { border-color: color-mix(in srgb, var(--pick-tone, var(--dsw-alias-brand-primary)) 80%, var(--dsw-alias-border-l1)); }
       .dq-synth .dq-enhance-title { color: #ffd76b; }
       .dq-synth-empty { padding: 6px 2px; font-size: 9.5px; color: var(--dsw-alias-label-secondary); }
+      .dq-synth-tabs { display: flex; gap: 4px; margin: 1px 0 3px; }
+      .dq-synth-tab {
+        appearance: none; font: inherit; cursor: pointer;
+        padding: 3px 11px; border-radius: 999px; font-size: 9.5px; font-weight: 600;
+        border: 1px solid var(--dsw-alias-border-l1);
+        background: transparent; color: var(--dsw-alias-label-secondary);
+        transition: color .15s ease, border-color .15s ease, background .15s ease;
+      }
+      .dq-synth-tab:hover { color: var(--dsw-alias-label-primary); }
+      .dq-synth-tab.is-active {
+        color: var(--dsw-alias-label-primary);
+        border-color: color-mix(in srgb, #ffd76b 52%, var(--dsw-alias-border-l1));
+        background: color-mix(in srgb, #ffd76b 14%, transparent);
+      }
       .dq-pick-meta { display: block; margin-top: 1px; font-size: 9px; color: var(--dsw-alias-label-secondary); }
       .dq-pick-badge { font-size: 9px; font-weight: 600; color: var(--dsw-alias-state-success-primary); white-space: nowrap; }
       .dq-gear-slot {
@@ -5794,8 +5810,8 @@ window.__ModuleLoader__.load({
                   return ok
                 }),
                 onAscend: id => runAction(`ascend:${id}`, 'ascend-gear', { id }),
-                onSynthesize: rarity => runAction(`synth:${rarity}`, 'synthesize-gear', { rarity }).then(ok => {
-                  if (ok) setGearPicker('weapon')
+                onSynthesize: (rarity, slot) => runAction(`synth:${slot}:${rarity}`, 'synthesize-gear', { rarity, slot }).then(ok => {
+                  if (ok) setGearPicker(slot)
                   return ok
                 }),
               }) : null,
@@ -6294,6 +6310,7 @@ window.__ModuleLoader__.load({
         const gear = data.gear
         const player = data.player
         const itemById = Object.fromEntries(gear.items.map(item => [item.id, item]))
+        const [synthSlot, setSynthSlot] = React.useState('weapon')
         const owned = gear.items.filter(item => item.owned)
         const slots = ['weapon', 'armor', 'charm', 'frame']
         const active = slots.includes(picker) ? picker : 'weapon'
@@ -6415,10 +6432,17 @@ window.__ModuleLoader__.load({
               h('div', { className: 'dq-enhance-head' },
                 h('span', { className: 'dq-enhance-title' }, h('span', { 'aria-hidden': true }, '⚗'), t('synth.title')),
                 h('span', { className: 'dq-enhance-hint' }, t('synth.hint'))),
+              h('div', { className: 'dq-synth-tabs' },
+                ['weapon', 'armor', 'charm'].map(slot => h('button', {
+                  key: slot,
+                  type: 'button',
+                  className: `dq-synth-tab${synthSlot === slot ? ' is-active' : ''}`,
+                  onClick: () => setSynthSlot(slot),
+                }, t(`gear.${slot}`)))),
               (() => {
                 const pools = new Map()
                 for (const item of gear.items) {
-                  if (!item.owned) continue
+                  if (!item.owned || item.slot !== synthSlot) continue
                   const entry = pools.get(item.rarity) || { rarity: item.rarity, total: 0, pieces: 0 }
                   entry.total += item.count || 1
                   entry.pieces += 1
@@ -6440,7 +6464,7 @@ window.__ModuleLoader__.load({
                     type: 'button',
                     className: 'dq-btn ghost',
                     disabled: Boolean(busy) || row.total < 5 || !NEXT_RARITY[row.rarity],
-                    onClick: () => onSynthesize(row.rarity),
+                    onClick: () => onSynthesize(row.rarity, synthSlot),
                   }, t('synth.button', { count: 5 }))))
               })(),
             h('div', { className: 'dq-picker' },
