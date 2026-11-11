@@ -1273,6 +1273,12 @@ window.__ModuleLoader__.load({
       'enhance.success': '{name} 强化成功',
       'synth.title': '合成',
       'affix.title': '词条',
+      'set.title': '套装',
+      'set.hint': '穿同名家族 2/3/4 件分别激活：伤害 +6% / 经验 +10% / 洗词条费用 -20%',
+      'set.damage': '伤害 +{value}%',
+      'set.xp': '经验 +{value}%',
+      'set.affix': '洗词条 -{value}%',
+      'set.need': '再穿 1 件激活（{count} 件）',
       'affix.hint': '每件装备可洗出随机词条，重复洗会替换最弱的一条；伤害/经验/星币/暴击/掉落都实时生效。',
       'affix.empty': '还没有词条',
       'affix.rerollHint': '洗出一条新词条',
@@ -2153,6 +2159,12 @@ window.__ModuleLoader__.load({
       'enhance.success': '{name} enhanced',
       'synth.title': 'Synthesis',
       'affix.title': 'Affixes',
+      'set.title': 'Sets',
+      'set.hint': 'Wearing 2/3/4 pieces of one family unlocks: damage +6% / XP +10% / affix rerolls -20%',
+      'set.damage': 'Damage +{value}%',
+      'set.xp': 'XP +{value}%',
+      'set.affix': 'Reroll -{value}%',
+      'set.need': 'One more piece to activate',
       'affix.hint': 'Each piece rolls random bonus lines; rerolling replaces the weakest one. Damage, XP, coins, crit and loot apply immediately.',
       'affix.empty': 'No affixes yet',
       'affix.rerollHint': 'Roll a new affix',
@@ -3927,6 +3939,27 @@ window.__ModuleLoader__.load({
       .dq-pick[data-equipped="true"] { border-color: color-mix(in srgb, var(--pick-tone, var(--dsw-alias-brand-primary)) 80%, var(--dsw-alias-border-l1)); }
       .dq-synth .dq-enhance-title { color: #ffd76b; }
       .dq-synth-empty { padding: 6px 2px; font-size: 9.5px; color: var(--dsw-alias-label-secondary); }
+      .dq-set-row {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 2fr);
+        gap: 10px; align-items: center; padding: 6px 9px; border-radius: 9px;
+        border: 1px solid color-mix(in srgb, var(--set-tone, #7f9dff) 30%, var(--dsw-alias-border-l1));
+        background: color-mix(in srgb, var(--set-tone, #7f9dff) 8%, var(--dsw-alias-bg-layer-2));
+      }
+      .dq-set-row[data-count="4"] { box-shadow: 0 0 16px color-mix(in srgb, var(--set-tone, #7f9dff) 26%, transparent); }
+      .dq-set-row[data-rarity="common"] { --set-tone: #b8c0cc; }
+      .dq-set-row[data-rarity="rare"] { --set-tone: #63d2b4; }
+      .dq-set-row[data-rarity="epic"] { --set-tone: #7f9dff; }
+      .dq-set-row[data-rarity="legendary"] { --set-tone: #f2c14e; }
+      .dq-set-row[data-rarity="mythic"] { --set-tone: #ff7ad9; }
+      .dq-set-row[data-rarity="red"] { --set-tone: #ff4d4d; }
+      .dq-set-row[data-rarity="ancient"] { --set-tone: #ff8a3c; }
+      .dq-set-row[data-rarity="divine"] { --set-tone: #b8f0ff; }
+      .dq-set-row[data-rarity="transcendent"] { --set-tone: #ffe9a8; }
+      .dq-set-name { font-size: 10.5px; font-weight: 650; color: color-mix(in srgb, var(--set-tone) 80%, #ffffff); }
+      .dq-set-count { font-size: 10px; font-weight: 700; color: var(--set-tone); }
+      .dq-set-bonus { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+      .dq-set-bonus-line { font-size: 9px; font-weight: 600; color: var(--dsw-alias-label-primary); opacity: .9; }
+      .dq-set-next { font-size: 9px; font-style: normal; color: var(--dsw-alias-label-secondary); }
       /* Affix lines under each equipped piece. */
       .dq-affix-row { align-items: center; }
       .dq-affix-lines { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
@@ -6622,6 +6655,25 @@ window.__ModuleLoader__.load({
                     onClick: () => onAscend(item.id),
                   }, !item.ascendCost ? '—' : `✦ ${item.ascendRate}%`))
               }))),
+            (player.sets && player.sets.length)
+              ? h('div', { className: 'dq-enhance dq-sets' },
+                h('div', { className: 'dq-enhance-head' },
+                  h('span', { className: 'dq-enhance-title' }, h('span', { 'aria-hidden': true }, '✦'), t('set.title')),
+                  h('span', { className: 'dq-enhance-hint' }, t('set.hint'))),
+                player.sets.map(entry => h('div', {
+                  key: entry.family,
+                  className: 'dq-set-row',
+                  'data-count': entry.count,
+                  'data-rarity': entry.rarity,
+                },
+                h('span', { className: 'dq-set-name' }, t(`gear.${entry.name}.name`).split('·')[0].trim()),
+                h('span', { className: 'dq-set-count' }, `${entry.count}/4`),
+                h('span', { className: 'dq-set-bonus' },
+                  entry.damage ? h('b', { className: 'dq-set-bonus-line' }, t('set.damage', { value: entry.damage })) : null,
+                  entry.xp ? h('b', { className: 'dq-set-bonus-line' }, t('set.xp', { value: entry.xp })) : null,
+                  entry.affixDiscount ? h('b', { className: 'dq-set-bonus-line' }, t('set.affix', { value: entry.affixDiscount })) : null,
+                  entry.count < 2 ? h('i', { className: 'dq-set-next' }, t('set.need', { count: 2 })) : null))))
+              : null,
             h('div', { className: 'dq-enhance dq-affix' },
               h('div', { className: 'dq-enhance-head' },
                 h('span', { className: 'dq-enhance-title' }, h('span', { 'aria-hidden': true }, '✧'), t('affix.title')),

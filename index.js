@@ -322,6 +322,44 @@ function affixTotals(state) {
   return totals
 }
 
+// Set bonuses: wearing pieces of one family pays out at 2 / 3 / 4 pieces.
+const SET_BONUS = { two: 6, three: 10, four: 20 }
+
+function gearFamily(id) {
+  const parts = String(id || '').split('.')
+  return parts.length === 2 ? parts[1] : ''
+}
+
+function gearSets(state) {
+  const counts = new Map()
+  for (const slot of GEAR_SLOTS) {
+    const id = state.gear.equipped[slot]
+    const item = id ? GEAR_BY_ID[id] : null
+    if (!item) continue
+    const family = gearFamily(item.id)
+    if (!family) continue
+    const entry = counts.get(family) || { family, count: 0, slots: [], rarity: item.rarity, name: item.id }
+    entry.count += 1
+    entry.slots.push(slot)
+    counts.set(family, entry)
+  }
+  return [...counts.values()].map(entry => ({
+    ...entry,
+    damage: entry.count >= 2 ? SET_BONUS.two : 0,
+    xp: entry.count >= 3 ? SET_BONUS.three : 0,
+    affixDiscount: entry.count >= 4 ? SET_BONUS.four : 0,
+  }))
+}
+
+function setTotals(state) {
+  const sets = gearSets(state)
+  return {
+    damage: sets.reduce((sum, entry) => sum + entry.damage, 0),
+    xp: sets.reduce((sum, entry) => sum + entry.xp, 0),
+    affixDiscount: Math.min(60, sets.reduce((sum, entry) => sum + entry.affixDiscount, 0)),
+  }
+}
+
 function itemPower(state, id) {
   const item = GEAR_BY_ID[id]
   if (!item) return 0
@@ -1209,7 +1247,8 @@ function awardXp(state, amount) {
   markActiveDay(state)
   const bonus = rebirthBonus(state)
   const affix = affixTotals(state)
-  const scaled = Math.round(value * (1 + bonus.xp / 100) * (1 + affix.xp / 100))
+  const sets = setTotals(state)
+  const scaled = Math.round(value * (1 + bonus.xp / 100) * (1 + affix.xp / 100) * (1 + sets.xp / 100))
   // XP past the cap does not buy stars any more: stars come from rebirths, so
   // experience simply stops at the ceiling until the player resets.
   const capXp = xpThreshold(MAX_LEVEL)
@@ -1558,12 +1597,14 @@ function clearStoryStage(state) {
 function damageAllBosses(state, base) {
   const rebirth = rebirthBonus(state)
   const affix = affixTotals(state)
+  const sets = setTotals(state)
   const crit = affix.crit > 0 && Math.random() * 100 < affix.crit ? 1.8 : 1
   const amount = Math.max(1, Math.round(Number(base)
     * (1 + gearPower(state) / 220)
     * (1 + classDamageBonus(state))
     * (1 + rebirth.damage / 100)
     * (1 + affix.damage / 100)
+    * (1 + sets.damage / 100)
     * crit))
   if (state.season) state.season.renown += amount
   applyBossDamage(state, state.dailyBoss, amount, 'daily')
@@ -1757,7 +1798,8 @@ function gearView(state) {
         const list = state.gear.affixes?.[item.id] || []
         const locks = state.gear.affixLock?.[item.id] || []
         const locked = locks.filter(Boolean).length
-        return Math.round(affixCost(item.rarity, list.length) * (1 + locked * 0.5))
+        const discount = setTotals(state).affixDiscount
+        return Math.round(affixCost(item.rarity, list.length) * (1 + locked * 0.5) * (1 - discount / 100))
       })(),
       affixLocks: Array.isArray(state.gear.affixLock?.[item.id]) ? state.gear.affixLock[item.id] : [],
       enhance: level,
@@ -1859,6 +1901,8 @@ function buildSnapshot(state) {
       rebirths: rebirthBonus(state).lives,
       rebirth: rebirthBonus(state),
       affix: affixTotals(state),
+      sets: gearSets(state),
+      setTotals: setTotals(state),
       xpIntoLevel,
       xpForNext,
       xpPercent: maxed ? 100 : Math.round((xpIntoLevel / xpForNext) * 1000) / 10,
@@ -2214,7 +2258,8 @@ function applyAction(state, payload) {
       list.splice(weakest, 1)
       locks.splice(weakest, 1)
     }
-    const cost = Math.round(affixCost(item.rarity, list.length) * (1 + lockedCount * 0.5))
+    const discount = setTotals(state).affixDiscount
+    const cost = Math.round(affixCost(item.rarity, list.length) * (1 + lockedCount * 0.5) * (1 - discount / 100))
     if (state.profile.coins < cost) return fail(state, 'not-enough-coins')
     state.profile.coins -= cost
     const affix = rollAffix(item.rarity)
