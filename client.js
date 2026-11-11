@@ -1272,6 +1272,17 @@ window.__ModuleLoader__.load({
       'enhance.max': '已满级',
       'enhance.success': '{name} 强化成功',
       'synth.title': '合成',
+      'affix.title': '词条',
+      'affix.hint': '每件装备可洗出随机词条，重复洗会替换最弱的一条；伤害/经验/星币/暴击/掉落都实时生效。',
+      'affix.empty': '还没有词条',
+      'affix.rerollHint': '洗出一条新词条',
+      'affix.rerollFull': '词条已满，重洗会替换最弱的一条',
+      'affix.damage': '伤害',
+      'affix.xp': '经验',
+      'affix.coins': '星币',
+      'affix.crit': '暴击',
+      'affix.loot': '掉落',
+      'toast.error.no-affix': '头像框没有词条。',
       'synth.hint': '同一部位、同一稀有度任意 5 件 → 1 件下一稀有度的同部位装备；优先消耗多余副本，被吃掉的装备会退回强化/进阶费用。',
       'synth.pieces': '（{pieces} 种）',
       'synth.top': '已达顶阶',
@@ -2137,6 +2148,17 @@ window.__ModuleLoader__.load({
       'enhance.max': 'Maxed',
       'enhance.success': '{name} enhanced',
       'synth.title': 'Synthesis',
+      'affix.title': 'Affixes',
+      'affix.hint': 'Each piece rolls random bonus lines; rerolling replaces the weakest one. Damage, XP, coins, crit and loot apply immediately.',
+      'affix.empty': 'No affixes yet',
+      'affix.rerollHint': 'Roll a new affix',
+      'affix.rerollFull': 'Slots full — reroll replaces the weakest line',
+      'affix.damage': 'Damage',
+      'affix.xp': 'XP',
+      'affix.coins': 'Coins',
+      'affix.crit': 'Crit',
+      'affix.loot': 'Loot',
+      'toast.error.no-affix': 'Frames carry no affixes.',
       'synth.hint': 'Any five items of the same slot and rarity fuse into one item of the next rarity in that slot; spare copies go first and consumed pieces refund their enhancement coins.',
       'synth.pieces': '({pieces} kinds)',
       'synth.top': 'Top tier',
@@ -3873,6 +3895,21 @@ window.__ModuleLoader__.load({
       .dq-pick[data-equipped="true"] { border-color: color-mix(in srgb, var(--pick-tone, var(--dsw-alias-brand-primary)) 80%, var(--dsw-alias-border-l1)); }
       .dq-synth .dq-enhance-title { color: #ffd76b; }
       .dq-synth-empty { padding: 6px 2px; font-size: 9.5px; color: var(--dsw-alias-label-secondary); }
+      /* Affix lines under each equipped piece. */
+      .dq-affix-row { align-items: center; }
+      .dq-affix-lines { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+      .dq-affix-line {
+        font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--affix-tone, #ffd76b) 45%, var(--dsw-alias-border-l1));
+        background: color-mix(in srgb, var(--affix-tone, #ffd76b) 12%, transparent);
+        color: color-mix(in srgb, var(--affix-tone, #ffd76b) 82%, #ffffff);
+      }
+      .dq-affix-damage { --affix-tone: #ff6b6b; }
+      .dq-affix-xp { --affix-tone: #7f9dff; }
+      .dq-affix-coins { --affix-tone: #f2c14e; }
+      .dq-affix-crit { --affix-tone: #ff7ad9; }
+      .dq-affix-loot { --affix-tone: #63d2b4; }
+      .dq-affix-empty { font-size: 9px; color: var(--dsw-alias-label-secondary); font-style: normal; }
       .dq-synth-tabs { display: flex; gap: 4px; margin: 1px 0 3px; }
       .dq-synth-tab {
         appearance: none; font: inherit; cursor: pointer;
@@ -5918,6 +5955,7 @@ window.__ModuleLoader__.load({
                   return ok
                 }),
                 onAscend: id => runAction(`ascend:${id}`, 'ascend-gear', { id }),
+                onRerollAffix: id => runAction(`affix:${id}`, 'reroll-affix', { id }),
                 onSynthesize: (rarity, slot) => runAction(`synth:${slot}:${rarity}`, 'synthesize-gear', { rarity, slot }).then(ok => {
                   if (ok) setGearPicker(slot)
                   return ok
@@ -6414,7 +6452,7 @@ window.__ModuleLoader__.load({
             }, busy === 'open-chest' ? '…' : t('chest.open'))))
       }
 
-      function GearTab({ data, t, locale, busy, picker, setPicker, onOpenChest, onEquipGear, onEnhance, onAscend, onSynthesize }) {
+      function GearTab({ data, t, locale, busy, picker, setPicker, onOpenChest, onEquipGear, onEnhance, onAscend, onSynthesize, onRerollAffix }) {
         const gear = data.gear
         const player = data.player
         const itemById = Object.fromEntries(gear.items.map(item => [item.id, item]))
@@ -6536,6 +6574,35 @@ window.__ModuleLoader__.load({
                     onClick: () => onAscend(item.id),
                   }, !item.ascendCost ? '—' : `✦ ${item.ascendRate}%`))
               }))),
+            h('div', { className: 'dq-enhance dq-affix' },
+              h('div', { className: 'dq-enhance-head' },
+                h('span', { className: 'dq-enhance-title' }, h('span', { 'aria-hidden': true }, '✧'), t('affix.title')),
+                h('span', { className: 'dq-enhance-hint' }, t('affix.hint'))),
+              ['weapon', 'armor', 'charm'].map(slot => {
+                const item = itemById[gear.equipped[slot]]
+                if (!item) return null
+                const lines = Array.isArray(item.affixes) ? item.affixes : []
+                const full = lines.length >= (item.affixSlots || 1)
+                return h('div', { key: slot, className: 'dq-enhance-row dq-affix-row', 'data-rarity': item.rarity },
+                  h('span', { className: 'dq-enhance-name' },
+                    t(`gear.${item.id}.name`),
+                    h('span', { className: 'dq-enhance-pieces' }, ` ${lines.length}/${item.affixSlots || 1}`)),
+                  h('span', { className: 'dq-affix-lines' },
+                    lines.length
+                      ? lines.map((line, index) => h('b', {
+                        key: index,
+                        className: `dq-affix-line dq-affix-${line.key}`,
+                        title: t(`affix.${line.key}`),
+                      }, `${t(`affix.${line.key}`)} +${line.value}%`))
+                      : h('i', { className: 'dq-affix-empty' }, t('affix.empty'))),
+                  h('button', {
+                    type: 'button',
+                    className: 'dq-btn ghost',
+                    disabled: Boolean(busy) || player.coins < (item.affixCost || 0),
+                    title: full ? t('affix.rerollFull') : t('affix.rerollHint'),
+                    onClick: () => onRerollAffix(item.id),
+                  }, `✧ ${formatNumber(item.affixCost || 0, locale)}`))
+              })),
             h('div', { className: 'dq-enhance dq-synth' },
               h('div', { className: 'dq-enhance-head' },
                 h('span', { className: 'dq-enhance-title' }, h('span', { 'aria-hidden': true }, '⚗'), t('synth.title')),

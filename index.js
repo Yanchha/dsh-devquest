@@ -263,6 +263,65 @@ function ascendRate(tier) {
   return ASCEND_RATES[Math.max(0, Math.min(ASCEND_MAX - 1, Number(tier) || 0))]
 }
 
+// Affixes: the endgame sink. Every piece can hold random bonus lines that can
+// be rerolled forever, so a maxed loadout still has something to chase.
+const AFFIX_DEFS = [
+  { key: 'damage', min: 3, max: 9 },   // percent, boss damage
+  { key: 'xp', min: 3, max: 10 },      // percent, experience
+  { key: 'coins', min: 4, max: 12 },   // percent, coins
+  { key: 'crit', min: 2, max: 6 },     // percent, critical chance
+  { key: 'loot', min: 2, max: 5 },     // percent, duplicate-copy chance
+]
+const AFFIX_SLOTS = { common: 1, rare: 1, epic: 2, legendary: 2, mythic: 3, red: 3, ancient: 4, divine: 4, transcendent: 4 }
+const AFFIX_PRICE = { common: 120, rare: 200, epic: 400, legendary: 900, mythic: 1800, red: 2600, ancient: 3600, divine: 5200, transcendent: 7000 }
+
+function affixSlots(rarity) {
+  return AFFIX_SLOTS[rarity] || 1
+}
+
+function affixCost(rarity, slot) {
+  return Math.round((AFFIX_PRICE[rarity] || 200) * (1 + slot * 0.6))
+}
+
+function rollAffix(rarity) {
+  const def = AFFIX_DEFS[Math.floor(Math.random() * AFFIX_DEFS.length)]
+  const tier = { common: 0.3, rare: 0.4, epic: 0.55, legendary: 0.7, mythic: 0.82, red: 0.9, ancient: 1, divine: 1.1, transcendent: 1.2 }[rarity] || 0.4
+  const value = Math.max(1, Math.round((def.min + Math.random() * (def.max - def.min)) * tier * 10) / 10)
+  return { key: def.key, value }
+}
+
+function normalizeAffixes(raw, owned) {
+  const result = {}
+  if (!raw || typeof raw !== 'object') return result
+  for (const [id, list] of Object.entries(raw)) {
+    if (!owned.has(id) || !Array.isArray(list)) continue
+    const slots = affixSlots(GEAR_BY_ID[id]?.rarity || 'common')
+    const clean = list.slice(0, slots).map(entry => {
+      if (!entry || typeof entry !== 'object') return null
+      const def = AFFIX_DEFS.find(candidate => candidate.key === entry.key)
+      const value = Number(entry.value)
+      if (!def || !Number.isFinite(value) || value <= 0) return null
+      return { key: def.key, value: Math.round(value * 10) / 10 }
+    })
+    if (clean.some(Boolean)) result[id] = clean
+  }
+  return result
+}
+
+function affixTotals(state) {
+  const totals = { damage: 0, xp: 0, coins: 0, crit: 0, loot: 0 }
+  for (const slot of GEAR_SLOTS) {
+    const id = state.gear.equipped[slot]
+    const list = id ? state.gear.affixes?.[id] : null
+    if (!Array.isArray(list)) continue
+    for (const entry of list) {
+      if (entry && totals[entry.key] !== undefined) totals[entry.key] += Number(entry.value) || 0
+    }
+  }
+  for (const key of Object.keys(totals)) totals[key] = Math.round(totals[key] * 10) / 10
+  return totals
+}
+
 function itemPower(state, id) {
   const item = GEAR_BY_ID[id]
   if (!item) return 0
@@ -816,6 +875,7 @@ function baseState() {
       equipped: defaultEquipped(),
       enhance: {},
       ascend: {},
+      affixes: {},
       count: Object.fromEntries(STARTER_GEAR.map(id => [id, 1])),
     },
     story: { stage: 1, hp: 500, maxHp: 500, bossId: 'cinder' },
@@ -899,6 +959,7 @@ function normalizeGear(raw) {
     equipped,
     enhance,
     ascend,
+    affixes: normalizeAffixes(raw?.affixes, owned),
     count,
   }
 }
@@ -1135,7 +1196,8 @@ function awardXp(state, amount) {
   if (!value) return 0
   markActiveDay(state)
   const bonus = rebirthBonus(state)
-  const scaled = bonus.xp > 0 ? Math.round(value * (1 + bonus.xp / 100)) : value
+  const affix = affixTotals(state)
+  const scaled = Math.round(value * (1 + bonus.xp / 100) * (1 + affix.xp / 100))
   // XP past the cap does not buy stars any more: stars come from rebirths, so
   // experience simply stops at the ceiling until the player resets.
   const capXp = xpThreshold(MAX_LEVEL)
@@ -1167,8 +1229,10 @@ function grantPeakSkin(state) {
 }
 
 function grantCoins(state, amount) {
-  const value = Math.max(0, Math.round(Number(amount) || 0))
-  if (!value) return 0
+  const raw = Math.max(0, Math.round(Number(amount) || 0))
+  if (!raw) return 0
+  const bonus = affixTotals(state).coins
+  const value = bonus > 0 ? Math.round(raw * (1 + bonus / 100)) : raw
   state.profile.coins += value
   state.stats.totalCoinsEarned += value
   return value
@@ -1310,7 +1374,9 @@ function grantGear(state, id, source) {
   if (state.gear.owned.includes(id)) {
     // Duplicates stack: five copies of one piece can be fused into the next
     // rarity, so a repeat drop is progress instead of a consolation coin.
-    state.gear.count[id] = Math.max(1, Number(state.gear.count[id]) || 1) + 1
+    const loot = affixTotals(state).loot
+    const extra = loot > 0 && Math.random() * 100 < loot ? 1 : 0
+    state.gear.count[id] = Math.max(1, Number(state.gear.count[id]) || 1) + 1 + extra
     bump(state, 'gearFound')
     return { gear: id, duplicate: true, coins: 0, count: state.gear.count[id] }
   }
@@ -1479,7 +1545,14 @@ function clearStoryStage(state) {
 
 function damageAllBosses(state, base) {
   const rebirth = rebirthBonus(state)
-  const amount = Math.max(1, Math.round(Number(base) * (1 + gearPower(state) / 220) * (1 + classDamageBonus(state)) * (1 + rebirth.damage / 100)))
+  const affix = affixTotals(state)
+  const crit = affix.crit > 0 && Math.random() * 100 < affix.crit ? 1.8 : 1
+  const amount = Math.max(1, Math.round(Number(base)
+    * (1 + gearPower(state) / 220)
+    * (1 + classDamageBonus(state))
+    * (1 + rebirth.damage / 100)
+    * (1 + affix.damage / 100)
+    * crit))
   if (state.season) state.season.renown += amount
   applyBossDamage(state, state.dailyBoss, amount, 'daily')
   applyBossDamage(state, state.boss, amount, 'weekly')
@@ -1665,6 +1738,9 @@ function gearView(state) {
       powerNow: itemPower(state, item.id),
       signature: item.signature === true,
       count: Math.max(1, Number(state.gear.count?.[item.id]) || 1),
+      affixes: Array.isArray(state.gear.affixes?.[item.id]) ? state.gear.affixes[item.id] : [],
+      affixSlots: affixSlots(item.rarity),
+      affixCost: item.slot === 'frame' ? null : affixCost(item.rarity, (state.gear.affixes?.[item.id] || []).length),
       enhance: level,
       enhanceMax: ENHANCE_MAX,
       enhanceCost: item.slot === 'frame' || level >= ENHANCE_MAX ? null : enhanceCost(level),
@@ -1763,6 +1839,7 @@ function buildSnapshot(state) {
       paragon,
       rebirths: rebirthBonus(state).lives,
       rebirth: rebirthBonus(state),
+      affix: affixTotals(state),
       xpIntoLevel,
       xpForNext,
       xpPercent: maxed ? 100 : Math.round((xpIntoLevel / xpForNext) * 1000) / 10,
@@ -2094,6 +2171,31 @@ function applyAction(state, payload) {
       id: item.id,
       state: buildSnapshot(state),
     }
+  }
+  if (action === 'reroll-affix') {
+    const item = GEAR_BY_ID[String(payload?.id || '')]
+    if (!item) return fail(state, 'unknown-gear')
+    if (!state.gear.owned.includes(item.id)) return fail(state, 'not-owned')
+    if (item.slot === 'frame') return fail(state, 'no-affix')
+    const slots = affixSlots(item.rarity)
+    if (!state.gear.affixes || typeof state.gear.affixes !== 'object') state.gear.affixes = {}
+    const list = Array.isArray(state.gear.affixes[item.id]) ? [...state.gear.affixes[item.id]] : []
+    if (list.length >= slots) {
+      // Full: reroll the weakest line instead of refusing.
+      let weakest = 0
+      for (let index = 1; index < list.length; index += 1) {
+        if ((list[index]?.value || 0) < (list[weakest]?.value || 0)) weakest = index
+      }
+      list.splice(weakest, 1)
+    }
+    const cost = affixCost(item.rarity, list.length)
+    if (state.profile.coins < cost) return fail(state, 'not-enough-coins')
+    state.profile.coins -= cost
+    const affix = rollAffix(item.rarity)
+    list.push(affix)
+    state.gear.affixes[item.id] = list
+    addActivity(state, { kind: 'affix', gear: item.id, key: affix.key, value: affix.value })
+    return { ok: true, affix, cost, state: buildSnapshot(state) }
   }
   if (action === 'rebirth') {
     const level = levelForXp(state.profile.xp)
