@@ -3360,6 +3360,55 @@ window.__ModuleLoader__.load({
         width: 106px; height: 106px; padding: 0; border-radius: 24px;
         display: block; overflow: visible;
       }
+      /* Outer halo around the whole HUD badge, scaled by the equipped frame. */
+      .dq-hud-card::before {
+        content: ""; position: absolute; inset: -10px; border-radius: 34px;
+        pointer-events: none; opacity: 0; z-index: 0; transition: opacity .3s ease;
+      }
+      .dq-hud-card::after {
+        content: ""; position: absolute; inset: -3px; border-radius: 27px;
+        pointer-events: none; opacity: 0; z-index: 0; transition: opacity .3s ease;
+      }
+      .dq-hud-card[data-frarity="legendary"]::before {
+        opacity: .42;
+        background: radial-gradient(circle, color-mix(in srgb, #f2c14e 40%, transparent), transparent 70%);
+        animation: dq-frame-pulse 4.4s ease-in-out infinite;
+      }
+      .dq-hud-card[data-frarity="mythic"]::before,
+      .dq-hud-card[data-frarity="red"]::before,
+      .dq-hud-card[data-frarity="ancient"]::before,
+      .dq-hud-card[data-frarity="divine"]::before,
+      .dq-hud-card[data-frarity="transcendent"]::before {
+        opacity: .9;
+        background: conic-gradient(from 0deg,
+          transparent 0deg,
+          color-mix(in srgb, var(--hud-tone) 90%, transparent) 34deg,
+          transparent 96deg,
+          color-mix(in srgb, #ffffff 55%, transparent) 190deg,
+          transparent 268deg);
+        mask: radial-gradient(closest-side, transparent 72%, #000 84%, #000 96%, transparent 100%);
+        -webkit-mask: radial-gradient(closest-side, transparent 72%, #000 84%, #000 96%, transparent 100%);
+        filter: blur(3px) saturate(1.2);
+        animation: dq-aura-spin 8s linear infinite;
+      }
+      .dq-hud-card[data-frarity="red"]::before { animation-duration: 6.4s; }
+      .dq-hud-card[data-frarity="ancient"]::before { animation-duration: 5.4s; }
+      .dq-hud-card[data-frarity="divine"]::before { animation-duration: 4.6s; inset: -12px; filter: blur(3.5px) saturate(1.3); }
+      .dq-hud-card[data-frarity="transcendent"]::before { animation-duration: 4s; inset: -14px; opacity: 1; }
+      .dq-hud-card[data-frarity="mythic"] { --hud-tone: #ff7ad9; }
+      .dq-hud-card[data-frarity="red"] { --hud-tone: #ff4d4d; }
+      .dq-hud-card[data-frarity="ancient"] { --hud-tone: #ff8a3c; }
+      .dq-hud-card[data-frarity="divine"] { --hud-tone: #b8f0ff; }
+      .dq-hud-card[data-frarity="transcendent"] { --hud-tone: #ffe9a8; }
+      .dq-hud-card[data-frarity="mythic"]::after,
+      .dq-hud-card[data-frarity="red"]::after,
+      .dq-hud-card[data-frarity="ancient"]::after,
+      .dq-hud-card[data-frarity="divine"]::after,
+      .dq-hud-card[data-frarity="transcendent"]::after {
+        opacity: .8;
+        border: 1px solid color-mix(in srgb, var(--hud-tone) 46%, transparent);
+        box-shadow: 0 0 22px color-mix(in srgb, var(--hud-tone) 40%, transparent);
+      }
       .dq-hud-frame {
         --frame-color: color-mix(in srgb, var(--dsw-alias-label-secondary) 46%, transparent);
         --frame-width: 1px;
@@ -7334,6 +7383,7 @@ window.__ModuleLoader__.load({
               ref: pillRef,
               type: 'button',
               className: `dq-hud dq-hud-card${moments.levelUp ? ' is-levelup' : ''}`,
+              'data-frarity': FRAME_RARITY[player.equippedFrame || 'f.novice'] || 'common',
               title: t('hud.open'),
               'aria-label': t('hud.open'),
               onPointerDown,
