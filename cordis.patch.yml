@@ -1,0 +1,3 @@
+- insert:
+    - id: devquest
+      name: '@local/dsh-devquest'

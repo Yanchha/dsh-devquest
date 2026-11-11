@@ -1,0 +1,14 @@
+# Local save data: every player keeps their own progress.
+data/
+
+# Build artifacts and local packaging output.
+node_modules/
+*.tgz
+*.log
+
+# Scratch files and editor backups.
+.tmp-*
+client.*.js
+assets/
+.DS_Store
+Thumbs.db
