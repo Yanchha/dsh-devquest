@@ -1746,8 +1746,6 @@ function buildSnapshot(state) {
       name: state.profile.name,
       xp: state.profile.xp,
       level,
-      // Past the cap the badge keeps counting: 60 + paragon stars.
-      displayLevel: level >= MAX_LEVEL ? MAX_LEVEL + paragon.stars : level,
       maxLevel: MAX_LEVEL,
       paragon,
       rebirths: rebirthBonus(state).lives,

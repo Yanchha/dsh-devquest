@@ -5614,7 +5614,7 @@ window.__ModuleLoader__.load({
             h('div', { className: 'dq-arena-sky', 'aria-hidden': 'true' }),
             h('div', { className: 'dq-arena-hud' },
               h('span', { className: 'dq-arena-chip', 'aria-label': t('arena.you') },
-                h(Crest, { level: player.displayLevel || player.level, frame: player.equippedFrame, size: 'hud', gems: player.rebirths || 0, label: t('hero.level', { level: player.level }) }),
+                h(Crest, { level: player.level, frame: player.equippedFrame, size: 'hud', gems: player.rebirths || 0, label: t('hero.level', { level: player.level }) }),
                 h('span', { className: 'dq-arena-name' }, player.name)),
               h('span', { className: 'dq-arena-chip boss' },
                 h('span', { 'aria-hidden': true }, BOSS_META[boss.bossId]?.glyph || '♛'),
@@ -6008,11 +6008,11 @@ window.__ModuleLoader__.load({
               h('div', { className: 'dq-crest-wrap' },
                 h(Crest, {
                   key: player.equippedFrame || 'f.novice',
-                  level: player.displayLevel || player.level,
+                  level: player.level,
                   frame: player.equippedFrame,
                   percent: player.xpPercent,
                   gems: player.rebirths || 0,
-                  label: `${t('hero.level', { level: player.displayLevel || player.level })} · ${t(`gear.${player.equippedFrame}.name`)}`,
+                  label: `${t('hero.level', { level: player.level })} · ${t(`gear.${player.equippedFrame}.name`)}`,
                 }),
                 h('button', {
                   type: 'button',
@@ -6114,7 +6114,7 @@ window.__ModuleLoader__.load({
                   : t('hero.toNext', { xp: formatNumber(Math.max(0, player.xpForNext - player.xpIntoLevel), locale) })),
                 h('span', null, player.level >= (player.maxLevel || 60)
                   ? t('hero.maxLevel')
-                  : t('hero.level', { level: player.displayLevel || player.level })))),
+                  : t('hero.level', { level: player.level })))),
             player.paragon && player.paragon.stars > 0
               ? h('div', { className: 'dq-paragon', 'data-capped': player.paragon.capped ? 'true' : 'false' },
                 h('span', { className: 'dq-paragon-stars', 'aria-label': t('paragon.stars', { stars: player.paragon.stars }) },
@@ -6465,7 +6465,7 @@ window.__ModuleLoader__.load({
                     title: `${t(`gear.${slot}`)} · ${t(`gear.${item.id}.name`)}`,
                   },
                   slot === 'frame'
-                    ? h(Crest, { level: player.displayLevel || player.level, frame: gear.equipped.frame, size: 'mini', gems: player.rebirths || 0 })
+                    ? h(Crest, { level: player.level, frame: gear.equipped.frame, size: 'mini', gems: player.rebirths || 0 })
                     : h(GearIcon, { id: item.id, slot: item.slot, rarity: item.rarity }))
                 })),
               h('span', { className: 'dq-doll-meta' },
@@ -6488,7 +6488,7 @@ window.__ModuleLoader__.load({
                 },
                 h('span', { className: 'dq-gear-slot-icon', 'aria-hidden': true },
                   slot === 'frame'
-                    ? h(Crest, { level: player.displayLevel || player.level, frame: gear.equipped.frame, size: 'mini' })
+                    ? h(Crest, { level: player.level, frame: gear.equipped.frame, size: 'mini' })
                     : item
                       ? h(GearIcon, { id: item.id, slot: item.slot, rarity: item.rarity })
                       : h('span', { className: 'dq-slot-empty' }, meta.glyph)),
@@ -6591,7 +6591,7 @@ window.__ModuleLoader__.load({
                   },
                 },
                 item.slot === 'frame'
-                  ? h(Crest, { level: player.displayLevel || player.level, frame: item.id, size: 'mini' })
+                  ? h(Crest, { level: player.level, frame: item.id, size: 'mini' })
                   : h('span', { className: 'dq-pick-glyph', 'aria-hidden': true },
                     h(GearIcon, { id: item.id, slot: item.slot, rarity: item.rarity })),
                 h('span', { className: 'dq-pick-main' },
@@ -6616,7 +6616,7 @@ window.__ModuleLoader__.load({
               owned.map(item => h('div', { key: item.id, className: 'dq-gear-item', 'data-rarity': item.rarity },
                 h('div', { className: 'dq-gear-item-icon', 'aria-hidden': true },
                   item.slot === 'frame'
-                    ? h(Crest, { level: player.displayLevel || player.level, frame: item.id, size: 'mini' })
+                    ? h(Crest, { level: player.level, frame: item.id, size: 'mini' })
                     : h(GearIcon, { id: item.id, slot: item.slot, rarity: item.rarity })),
                 h('div', { className: 'dq-gear-item-main' },
                   h('div', { className: 'dq-gear-item-name' }, t(`gear.${item.id}.name`)),
@@ -7404,7 +7404,14 @@ window.__ModuleLoader__.load({
                 GEM_SLOTS.slice(0, Math.min(GEM_SLOTS.length, player.rebirths)).map((slot, index) =>
                   h('i', { key: index, className: 'dq-crest-gem', style: { left: `${slot.x}%`, top: `${slot.y}%` } })))
                 : null),
-            h('span', { className: 'dq-hud-badge' }, player.displayLevel || player.level),
+            h('span', { className: 'dq-hud-badge' }, player.level),
+            player.paragon && player.paragon.stars > 0
+              ? h('span', {
+                className: 'dq-hud-stars',
+                title: t('paragon.stars', { stars: player.paragon.stars }),
+                'aria-label': t('paragon.stars', { stars: player.paragon.stars }),
+              }, '★')
+              : null,
             claimable ? h('span', { className: 'dq-hud-claim', 'aria-hidden': true }) : null,
             h('span', { className: 'dq-hud-xpbar', 'aria-hidden': true },
               h('i', { style: { width: `${Math.max(3, Math.min(100, player.xpPercent))}%` } })),
