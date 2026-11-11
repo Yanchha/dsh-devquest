@@ -189,7 +189,7 @@ const GEAR_SIGNATURES = new Set([
 // Synthesis: five copies of one piece fuse into a random weapon of the next
 // rarity. Ancient and divine gear can only be reached this way.
 const SYNTH_COPIES = 5
-const SYNTH_SLOTS = ['weapon', 'armor', 'charm']
+const SYNTH_SLOTS = ['weapon', 'armor', 'charm', 'frame']
 const RARITY_LADDER = ['common', 'rare', 'epic', 'legendary', 'mythic', 'red', 'ancient', 'divine', 'transcendent']
 const SYNTH_ONLY = new Set(['ancient', 'divine'])
 const SEASON_ONLY = new Set(['red'])

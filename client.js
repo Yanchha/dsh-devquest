@@ -6433,7 +6433,7 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'dq-enhance-title' }, h('span', { 'aria-hidden': true }, '⚗'), t('synth.title')),
                 h('span', { className: 'dq-enhance-hint' }, t('synth.hint'))),
               h('div', { className: 'dq-synth-tabs' },
-                ['weapon', 'armor', 'charm'].map(slot => h('button', {
+                ['weapon', 'armor', 'charm', 'frame'].map(slot => h('button', {
                   key: slot,
                   type: 'button',
                   className: `dq-synth-tab${synthSlot === slot ? ' is-active' : ''}`,
