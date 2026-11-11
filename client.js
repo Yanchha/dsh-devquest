@@ -880,8 +880,10 @@ window.__ModuleLoader__.load({
       'hero.level': '等级 {level}',
       'hero.maxLevel': 'Lv.60 · 满级',
       'paragon.stars': '巅峰之星 ×{stars}',
-      'paragon.peak': '巅峰已满 · 转生皮肤已解锁',
+      'paragon.peak': '巅峰十阶 · 已达上限',
       'paragon.capped': '巅峰十阶 · 已满',
+      'paragon.readyHint': '已满级 · 可以转生',
+      'paragon.nextStar': '转生可获得第 {stars} 颗星',
       'rebirth.lives': '轮回 {lives} 世',
       'rebirth.bonus': '伤害 +{damage}% · 经验 +{xp}%',
       'rebirth.ready': '转生',
@@ -1743,8 +1745,10 @@ window.__ModuleLoader__.load({
       'hero.level': 'Level {level}',
       'hero.maxLevel': 'Lv.60 · max',
       'paragon.stars': 'Paragon stars ×{stars}',
-      'paragon.peak': 'Peak reached · transcendence skin unlocked',
+      'paragon.peak': 'Peak ten · maxed',
       'paragon.capped': 'Peak ten · maxed',
+      'paragon.readyHint': 'Max level · ready to rebirth',
+      'paragon.nextStar': 'Rebirth for star {stars}',
       'rebirth.lives': 'Rebirth {lives}',
       'rebirth.bonus': 'Damage +{damage}% · XP +{xp}%',
       'rebirth.ready': 'Rebirth',
@@ -6000,7 +6004,7 @@ window.__ModuleLoader__.load({
         }
 
         const [rebirthArmed, setRebirthArmed] = React.useState(false)
-        const rebirthReady = player.level >= player.maxLevel && player.paragon && player.paragon.capped
+        const rebirthReady = player.level >= player.maxLevel && player.paragon && !player.paragon.capped
 
         return h('section', { className: 'dq-hero', 'data-frame': player.equippedFrame || 'f.novice', 'data-frarity': FRAME_RARITY[player.equippedFrame || 'f.novice'] || 'common' },
           h('div', { className: 'dq-hero-grid' },
@@ -6110,12 +6114,12 @@ window.__ModuleLoader__.load({
               }, h('i', { style: { width: `${Math.max(2, Math.min(100, player.xpPercent))}%` } })),
               h('div', { className: 'dq-progress-foot' },
                 h('span', null, player.level >= (player.maxLevel || 60)
-                  ? t('paragon.toNext', { xp: formatNumber(Math.max(0, player.xpForNext - player.xpIntoLevel), locale) })
+                  ? t('paragon.readyHint')
                   : t('hero.toNext', { xp: formatNumber(Math.max(0, player.xpForNext - player.xpIntoLevel), locale) })),
                 h('span', null, player.level >= (player.maxLevel || 60)
                   ? t('hero.maxLevel')
                   : t('hero.level', { level: player.level })))),
-            player.paragon && player.paragon.stars > 0
+            player.paragon && (player.paragon.stars > 0 || (player.level >= (player.maxLevel || 60) && !player.paragon.capped))
               ? h('div', { className: 'dq-paragon', 'data-capped': player.paragon.capped ? 'true' : 'false' },
                 h('span', { className: 'dq-paragon-stars', 'aria-label': t('paragon.stars', { stars: player.paragon.stars }) },
                   '★'.repeat(player.paragon.stars),
@@ -6123,7 +6127,7 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'dq-paragon-label' },
                   player.paragon.capped
                     ? t('paragon.peak')
-                    : t('paragon.line', { stars: player.paragon.stars, coins: formatNumber(300 + (player.paragon.stars + 1) * 100, locale) })))
+                    : t('paragon.nextStar')))
               : null,
             h('div', { className: 'dq-hero-stats' },
               h(HeroStat, { label: t('hero.coins'), value: formatNumber(player.coins, locale), glyph: h(CoinIcon, { size: 11 }) }),

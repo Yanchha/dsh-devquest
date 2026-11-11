@@ -662,6 +662,11 @@ function paragonState(xp) {
   }
 }
 
+// Stars come from rebirths now: every rebirth is worth exactly one star.
+function peakStars(state) {
+  return Math.min(PARAGON_MAX, Math.max(0, Number(state.profile.rebirths) || 0))
+}
+
 function createChallengeSeason(kind, key, count) {
   const pool = kind === 'daily' ? DAILY_POOL : WEEKLY_POOL
   const chosen = seededShuffle(pool, hash32(`${kind}:${key}`)).slice(0, count)
@@ -1131,28 +1136,27 @@ function awardXp(state, amount) {
   markActiveDay(state)
   const bonus = rebirthBonus(state)
   const scaled = bonus.xp > 0 ? Math.round(value * (1 + bonus.xp / 100)) : value
-  const before = paragonState(state.profile.xp).stars
-  state.profile.xp += scaled
+  // XP past the cap does not buy stars any more: stars come from rebirths, so
+  // experience simply stops at the ceiling until the player resets.
+  const capXp = xpThreshold(MAX_LEVEL)
+  state.profile.xp = Math.min(capXp, state.profile.xp + scaled)
   state.stats.totalXpEarned += scaled
   bumpChallengeSeason(state, 'xp', scaled)
-  const after = paragonState(state.profile.xp).stars
-  if (after > before) grantParagon(state, before, after)
   return scaled
 }
 
-function grantParagon(state, from, to) {
-  for (let star = from + 1; star <= to; star += 1) {
-    const coins = 300 + star * 100
-    grantCoins(state, coins)
-    addActivity(state, { kind: 'paragon', stars: star, coins })
-    for (const milestone of PARAGON_TITLES) {
-      if (milestone.stars === star && !state.titles.owned.includes(milestone.title)) {
-        state.titles.owned.push(milestone.title)
-      }
+// One star per rebirth: pay the star reward and milestone titles.
+function grantStar(state, star) {
+  const coins = 300 + star * 100
+  grantCoins(state, coins)
+  addActivity(state, { kind: 'paragon', stars: star, coins })
+  for (const milestone of PARAGON_TITLES) {
+    if (milestone.stars === star && !state.titles.owned.includes(milestone.title)) {
+      state.titles.owned.push(milestone.title)
     }
   }
-  // Ten stars is the peak: hand over the transcendence skin once.
-  if (to >= PARAGON_MAX) grantPeakSkin(state)
+  if (star >= PARAGON_MAX) grantPeakSkin(state)
+  return coins
 }
 
 function grantPeakSkin(state) {
@@ -1424,7 +1428,7 @@ function achievementContext(state) {
     bossWeapons: state.gear.owned.filter(id => Object.values(SEASON_BOSS_GEAR).includes(id)).length,
     rank: SEASON_RANKS.filter(rank => state.season.renown >= rank.at).length - 1,
     level: levelForXp(state.profile.xp),
-    paragonStars: paragonState(state.profile.xp).stars,
+    paragonStars: peakStars(state),
     coinsEarned: state.stats.totalCoinsEarned,
     titles: state.titles.owned.length,
     lottery: state.stats.lotteryDraws,
@@ -1713,12 +1717,21 @@ function buildSnapshot(state) {
   ensurePeriods(state)
   evaluateAchievements(state)
   const level = levelForXp(state.profile.xp)
-  const paragon = paragonState(state.profile.xp)
+  const stars = peakStars(state)
+  const paragon = {
+    stars,
+    max: PARAGON_MAX,
+    capped: stars >= PARAGON_MAX,
+    into: 0,
+    need: PARAGON_STEP,
+    percent: stars >= PARAGON_MAX ? 100 : Math.round((stars / PARAGON_MAX) * 1000) / 10,
+    ready: level >= MAX_LEVEL && stars < PARAGON_MAX,
+  }
   const maxed = level >= MAX_LEVEL
   const currentFloor = xpThreshold(level)
   const nextFloor = xpThreshold(level + 1)
-  const xpIntoLevel = maxed ? paragon.into : Math.max(0, state.profile.xp - currentFloor)
-  const xpForNext = maxed ? paragon.need : Math.max(1, nextFloor - currentFloor)
+  const xpIntoLevel = maxed ? 0 : Math.max(0, state.profile.xp - currentFloor)
+  const xpForNext = maxed ? 1 : Math.max(1, nextFloor - currentFloor)
   const now = Date.now()
   const party = Object.values(state.sessions)
     .filter(entry => entry && typeof entry === 'object')
@@ -1752,7 +1765,7 @@ function buildSnapshot(state) {
       rebirth: rebirthBonus(state),
       xpIntoLevel,
       xpForNext,
-      xpPercent: Math.round((xpIntoLevel / xpForNext) * 1000) / 10,
+      xpPercent: maxed ? 100 : Math.round((xpIntoLevel / xpForNext) * 1000) / 10,
       coins: state.profile.coins,
       streak: state.profile.streak,
       bestStreak: state.profile.bestStreak,
@@ -2084,13 +2097,15 @@ function applyAction(state, payload) {
   }
   if (action === 'rebirth') {
     const level = levelForXp(state.profile.xp)
-    const paragon = paragonState(state.profile.xp)
-    if (level < MAX_LEVEL || !paragon.capped) return fail(state, 'not-at-peak')
+    if (level < MAX_LEVEL) return fail(state, 'not-at-peak')
+    const stars = peakStars(state)
+    if (stars >= PARAGON_MAX) return fail(state, 'peak-maxed')
     const lives = Math.max(0, Number(state.profile.rebirths) || 0) + 1
     state.profile.rebirths = lives
     state.profile.xp = 0
     const coins = 4000 + lives * 2000
     grantCoins(state, coins)
+    const starCoins = grantStar(state, Math.min(PARAGON_MAX, lives))
     addChest(state, 'astral', 1 + Math.floor(lives / 3))
     const bonus = rebirthBonus(state)
     const title = `rebirth${Math.min(5, lives)}`
@@ -2100,7 +2115,8 @@ function applyAction(state, payload) {
     return {
       ok: true,
       lives,
-      coins,
+      stars: peakStars(state),
+      coins: coins + starCoins,
       bonus,
       title,
       state: buildSnapshot(state),
