@@ -876,6 +876,7 @@ function baseState() {
       enhance: {},
       ascend: {},
       affixes: {},
+      affixLock: {},
       count: Object.fromEntries(STARTER_GEAR.map(id => [id, 1])),
     },
     story: { stage: 1, hp: 500, maxHp: 500, bossId: 'cinder' },
@@ -960,6 +961,17 @@ function normalizeGear(raw) {
     enhance,
     ascend,
     affixes: normalizeAffixes(raw?.affixes, owned),
+    affixLock: (() => {
+      const source = normalizeAffixes(raw?.affixes, owned)
+      const result = {}
+      if (!raw?.affixLock || typeof raw.affixLock !== 'object') return result
+      for (const [id, list] of Object.entries(raw.affixLock)) {
+        const affixes = source[id]
+        if (!affixes || !Array.isArray(list)) continue
+        result[id] = affixes.map((_, index) => list[index] === true)
+      }
+      return result
+    })(),
     count,
   }
 }
@@ -1740,7 +1752,14 @@ function gearView(state) {
       count: Math.max(1, Number(state.gear.count?.[item.id]) || 1),
       affixes: Array.isArray(state.gear.affixes?.[item.id]) ? state.gear.affixes[item.id] : [],
       affixSlots: affixSlots(item.rarity),
-      affixCost: item.slot === 'frame' ? null : affixCost(item.rarity, (state.gear.affixes?.[item.id] || []).length),
+      affixCost: (() => {
+        if (item.slot === 'frame') return null
+        const list = state.gear.affixes?.[item.id] || []
+        const locks = state.gear.affixLock?.[item.id] || []
+        const locked = locks.filter(Boolean).length
+        return Math.round(affixCost(item.rarity, list.length) * (1 + locked * 0.5))
+      })(),
+      affixLocks: Array.isArray(state.gear.affixLock?.[item.id]) ? state.gear.affixLock[item.id] : [],
       enhance: level,
       enhanceMax: ENHANCE_MAX,
       enhanceCost: item.slot === 'frame' || level >= ENHANCE_MAX ? null : enhanceCost(level),
@@ -2179,23 +2198,45 @@ function applyAction(state, payload) {
     if (item.slot === 'frame') return fail(state, 'no-affix')
     const slots = affixSlots(item.rarity)
     if (!state.gear.affixes || typeof state.gear.affixes !== 'object') state.gear.affixes = {}
-    const list = Array.isArray(state.gear.affixes[item.id]) ? [...state.gear.affixes[item.id]] : []
+    let list = Array.isArray(state.gear.affixes[item.id]) ? [...state.gear.affixes[item.id]] : []
+    if (!state.gear.affixLock || typeof state.gear.affixLock !== 'object') state.gear.affixLock = {}
+    let locks = Array.isArray(state.gear.affixLock[item.id]) ? state.gear.affixLock[item.id].slice(0, list.length) : []
+    while (locks.length < list.length) locks.push(false)
+    const lockedCount = locks.filter(Boolean).length
+    const freeIndexes = list.map((_, index) => index).filter(index => !locks[index])
     if (list.length >= slots) {
-      // Full: reroll the weakest line instead of refusing.
-      let weakest = 0
-      for (let index = 1; index < list.length; index += 1) {
+      if (!freeIndexes.length) return fail(state, 'all-locked')
+      // Full: reroll the weakest unlocked line, locked ones are safe.
+      let weakest = freeIndexes[0]
+      for (const index of freeIndexes) {
         if ((list[index]?.value || 0) < (list[weakest]?.value || 0)) weakest = index
       }
       list.splice(weakest, 1)
+      locks.splice(weakest, 1)
     }
-    const cost = affixCost(item.rarity, list.length)
+    const cost = Math.round(affixCost(item.rarity, list.length) * (1 + lockedCount * 0.5))
     if (state.profile.coins < cost) return fail(state, 'not-enough-coins')
     state.profile.coins -= cost
     const affix = rollAffix(item.rarity)
     list.push(affix)
+    locks.push(false)
     state.gear.affixes[item.id] = list
+    state.gear.affixLock[item.id] = locks
     addActivity(state, { kind: 'affix', gear: item.id, key: affix.key, value: affix.value })
-    return { ok: true, affix, cost, state: buildSnapshot(state) }
+    return { ok: true, affix, cost, locked: lockedCount, state: buildSnapshot(state) }
+  }
+  if (action === 'lock-affix') {
+    const item = GEAR_BY_ID[String(payload?.id || '')]
+    if (!item) return fail(state, 'unknown-gear')
+    const list = state.gear.affixes?.[item.id]
+    if (!Array.isArray(list) || !list.length) return fail(state, 'no-affix')
+    const index = Math.max(0, Math.min(list.length - 1, Math.floor(Number(payload?.index) || 0)))
+    if (!state.gear.affixLock || typeof state.gear.affixLock !== 'object') state.gear.affixLock = {}
+    const locks = Array.isArray(state.gear.affixLock[item.id]) ? state.gear.affixLock[item.id].slice(0, list.length) : []
+    while (locks.length < list.length) locks.push(false)
+    locks[index] = !locks[index]
+    state.gear.affixLock[item.id] = locks
+    return { ok: true, index, locked: locks[index], state: buildSnapshot(state) }
   }
   if (action === 'rebirth') {
     const level = levelForXp(state.profile.xp)

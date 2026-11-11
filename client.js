@@ -1276,7 +1276,11 @@ window.__ModuleLoader__.load({
       'affix.hint': '每件装备可洗出随机词条，重复洗会替换最弱的一条；伤害/经验/星币/暴击/掉落都实时生效。',
       'affix.empty': '还没有词条',
       'affix.rerollHint': '洗出一条新词条',
-      'affix.rerollFull': '词条已满，重洗会替换最弱的一条',
+      'affix.rerollFull': '词条已满，重洗会替换最弱的一条（锁定的不动）',
+      'affix.lockHint': '点击锁定，锁定后重洗不会替换它',
+      'affix.unlockHint': '点击解锁',
+      'affix.lockedPenalty': '锁定 +50% 重洗费用',
+      'toast.error.all-locked': '所有词条都锁住了，先解锁一条。',
       'affix.damage': '伤害',
       'affix.xp': '经验',
       'affix.coins': '星币',
@@ -2152,7 +2156,11 @@ window.__ModuleLoader__.load({
       'affix.hint': 'Each piece rolls random bonus lines; rerolling replaces the weakest one. Damage, XP, coins, crit and loot apply immediately.',
       'affix.empty': 'No affixes yet',
       'affix.rerollHint': 'Roll a new affix',
-      'affix.rerollFull': 'Slots full — reroll replaces the weakest line',
+      'affix.rerollFull': 'Slots full — reroll replaces the weakest unlocked line',
+      'affix.lockHint': 'Click to lock: rerolls will keep this line',
+      'affix.unlockHint': 'Click to unlock',
+      'affix.lockedPenalty': 'Each lock adds +50% reroll cost',
+      'toast.error.all-locked': 'Every line is locked — unlock one first.',
       'affix.damage': 'Damage',
       'affix.xp': 'XP',
       'affix.coins': 'Coins',
@@ -3910,6 +3918,17 @@ window.__ModuleLoader__.load({
       .dq-affix-crit { --affix-tone: #ff7ad9; }
       .dq-affix-loot { --affix-tone: #63d2b4; }
       .dq-affix-empty { font-size: 9px; color: var(--dsw-alias-label-secondary); font-style: normal; }
+      .dq-affix-line {
+        appearance: none; font: inherit; cursor: pointer;
+        transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      }
+      .dq-affix-line:hover:not(:disabled) { transform: translateY(-1px); }
+      .dq-affix-line.is-locked {
+        border-color: #f2c14e;
+        background: color-mix(in srgb, #f2c14e 22%, transparent);
+        color: #fff3c4;
+        box-shadow: 0 0 10px color-mix(in srgb, #f2c14e 45%, transparent);
+      }
       .dq-synth-tabs { display: flex; gap: 4px; margin: 1px 0 3px; }
       .dq-synth-tab {
         appearance: none; font: inherit; cursor: pointer;
@@ -5956,6 +5975,7 @@ window.__ModuleLoader__.load({
                 }),
                 onAscend: id => runAction(`ascend:${id}`, 'ascend-gear', { id }),
                 onRerollAffix: id => runAction(`affix:${id}`, 'reroll-affix', { id }),
+                onToggleAffixLock: (id, index) => runAction(`lock:${id}:${index}`, 'lock-affix', { id, index }),
                 onSynthesize: (rarity, slot) => runAction(`synth:${slot}:${rarity}`, 'synthesize-gear', { rarity, slot }).then(ok => {
                   if (ok) setGearPicker(slot)
                   return ok
@@ -6452,7 +6472,7 @@ window.__ModuleLoader__.load({
             }, busy === 'open-chest' ? '…' : t('chest.open'))))
       }
 
-      function GearTab({ data, t, locale, busy, picker, setPicker, onOpenChest, onEquipGear, onEnhance, onAscend, onSynthesize, onRerollAffix }) {
+      function GearTab({ data, t, locale, busy, picker, setPicker, onOpenChest, onEquipGear, onEnhance, onAscend, onSynthesize, onRerollAffix, onToggleAffixLock }) {
         const gear = data.gear
         const player = data.player
         const itemById = Object.fromEntries(gear.items.map(item => [item.id, item]))
@@ -6582,6 +6602,7 @@ window.__ModuleLoader__.load({
                 const item = itemById[gear.equipped[slot]]
                 if (!item) return null
                 const lines = Array.isArray(item.affixes) ? item.affixes : []
+                const locks = Array.isArray(item.affixLocks) ? item.affixLocks : []
                 const full = lines.length >= (item.affixSlots || 1)
                 return h('div', { key: slot, className: 'dq-enhance-row dq-affix-row', 'data-rarity': item.rarity },
                   h('span', { className: 'dq-enhance-name' },
@@ -6589,11 +6610,14 @@ window.__ModuleLoader__.load({
                     h('span', { className: 'dq-enhance-pieces' }, ` ${lines.length}/${item.affixSlots || 1}`)),
                   h('span', { className: 'dq-affix-lines' },
                     lines.length
-                      ? lines.map((line, index) => h('b', {
+                      ? lines.map((line, index) => h('button', {
                         key: index,
-                        className: `dq-affix-line dq-affix-${line.key}`,
-                        title: t(`affix.${line.key}`),
-                      }, `${t(`affix.${line.key}`)} +${line.value}%`))
+                        type: 'button',
+                        className: `dq-affix-line dq-affix-${line.key}${locks[index] ? ' is-locked' : ''}`,
+                        title: locks[index] ? t('affix.unlockHint') : t('affix.lockHint'),
+                        disabled: Boolean(busy),
+                        onClick: () => onToggleAffixLock(item.id, index),
+                      }, h('span', { 'aria-hidden': true }, locks[index] ? '🔒' : '✧'), ` ${t(`affix.${line.key}`)} +${line.value}%`))
                       : h('i', { className: 'dq-affix-empty' }, t('affix.empty'))),
                   h('button', {
                     type: 'button',
