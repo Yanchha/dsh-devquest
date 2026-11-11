@@ -2709,8 +2709,60 @@ window.__ModuleLoader__.load({
     }
     for (const family of BULK_FAMILIES) FRAME_RARITY[`f.${family.key}`] = family.tier
 
+    // Frames of one tier share a base hue but shift around it, so two mythic
+    // borders never look like the same object.
+    const shiftHue = (hex, degrees) => {
+      const match = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim())
+      if (!match) return hex
+      const value = parseInt(match[1], 16)
+      const r = ((value >> 16) & 255) / 255
+      const g = ((value >> 8) & 255) / 255
+      const b = (value & 255) / 255
+      const max = Math.max(r, g, b)
+      const min = Math.min(r, g, b)
+      const light = (max + min) / 2
+      const delta = max - min
+      if (!delta) return hex
+      const sat = light > 0.5 ? delta / (2 - max - min) : delta / (max + min)
+      let hue = 0
+      if (max === r) hue = ((g - b) / delta + (g < b ? 6 : 0)) / 6
+      else if (max === g) hue = ((b - r) / delta + 2) / 6
+      else hue = ((r - g) / delta + 4) / 6
+      hue = (hue + degrees / 360 + 1) % 1
+      const q = light < 0.5 ? light * (1 + sat) : light + sat - light * sat
+      const p = 2 * light - q
+      const channel = (t) => {
+        let temp = t
+        if (temp < 0) temp += 1
+        if (temp > 1) temp -= 1
+        if (temp < 1 / 6) return p + (q - p) * 6 * temp
+        if (temp < 1 / 2) return q
+        if (temp < 2 / 3) return p + (q - p) * (2 / 3 - temp) * 6
+        return p
+      }
+      const toHex = (value2) => Math.round(Math.max(0, Math.min(1, value2)) * 255).toString(16).padStart(2, '0')
+      return `#${toHex(channel(hue + 1 / 3))}${toHex(channel(hue))}${toHex(channel(hue - 1 / 3))}`
+    }
+    // Each tier keeps its identity hue; families inside it only drift a little
+    // so a red frame never turns yellow.
+    const FRAME_HUE_STEPS = {
+      common: [0, 10, -10, 18, -18],
+      rare: [0, -14, 16, -26, 26],
+      epic: [0, -18, 14, -30, 30],
+      legendary: [0, -12, 12, -22, 22],
+      mythic: [0, -16, 16, -28, 28],
+      red: [0, -7, 7, -13, 13],
+      ancient: [0, -9, 9, -17, 17],
+      divine: [0, -12, 12, -22, 22],
+    }
+    const tierCursor = {}
+
     const BULK_FRAME_CSS = BULK_FAMILIES.map(family => {
-      const tone = BULK_TIER_TONE[family.tier] || '#b8c0cc'
+      const baseTone = BULK_TIER_TONE[family.tier] || '#b8c0cc'
+      const steps = FRAME_HUE_STEPS[family.tier] || [0]
+      const cursor = tierCursor[family.tier] || 0
+      tierCursor[family.tier] = cursor + 1
+      const tone = shiftHue(baseTone, steps[cursor % steps.length])
       const width = family.tier === 'divine' ? '3px'
         : family.tier === 'ancient' ? '2.5px'
           : family.tier === 'mythic' || family.tier === 'legendary' ? '2px' : '1px'
@@ -2721,7 +2773,10 @@ window.__ModuleLoader__.load({
           : family.tier === 'mythic' || family.tier === 'legendary'
             ? `0 0 0 2px color-mix(in srgb, ${tone} 30%, transparent), 0 0 20px color-mix(in srgb, ${tone} 40%, transparent)`
             : `0 0 14px color-mix(in srgb, ${tone} 28%, transparent)`
-      return `[data-frame="f.${family.key}"] { --frame-color: ${tone}; --frame-width: ${width}; --frame-glow: ${glow}; }`
+      const style = family.tier === 'common' || family.tier === 'rare' || family.tier === 'epic'
+        ? ['solid', 'dashed', 'dotted', 'double'][cursor % 4]
+        : 'solid'
+      return `[data-frame="f.${family.key}"] { --frame-color: ${tone}; --frame-width: ${width}; --frame-style: ${style}; --frame-glow: ${glow}; }`
     }).join('\n      ')
 
     const CSS = `
@@ -3630,7 +3685,7 @@ window.__ModuleLoader__.load({
       }
       .dq-crest-ring {
         position: absolute; inset: 5px; border-radius: 18px; pointer-events: none;
-        border: var(--frame-width) solid var(--frame-color);
+        border: var(--frame-width) var(--frame-style, solid) var(--frame-color);
         box-shadow: var(--frame-glow);
         transition: border-color .2s ease, box-shadow .2s ease;
       }
