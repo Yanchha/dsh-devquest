@@ -124,15 +124,15 @@ npm pack
 
 ### 方式三：Git 仓库 / npm
 
-本仓库：<https://github.com/Yanchha/DeepSeek_DevQuest>
+本仓库：<https://github.com/Yanchha/dsh-devquest>
 
 对方可以直接：
 
 ```powershell
-dsh plugin --profile desktop add github:Yanchha/DeepSeek_DevQuest
+dsh plugin --profile desktop add github:Yanchha/dsh-devquest
 ```
 
-或在 `plugin_manager` 的 `install_bundle` 里填 `github:Yanchha/DeepSeek_DevQuest`。若想公开发布到 npm，需要先把包名从 `@local/dsh-devquest` 改成你自己的 scope（例如 `@yourname/dsh-devquest`），再 `npm publish`，之后别人 `install_bundle "@yourname/dsh-devquest"` 即可。
+或在 `plugin_manager` 的 `install_bundle` 里填 `github:Yanchha/dsh-devquest`。若想公开发布到 npm，需要先把包名从 `@local/dsh-devquest` 改成你自己的 scope（例如 `@yourname/dsh-devquest`），再 `npm publish`，之后别人 `install_bundle "@yourname/dsh-devquest"` 即可。
 
 ### 对方安装后会发生什么
 
