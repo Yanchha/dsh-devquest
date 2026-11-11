@@ -4,6 +4,8 @@
 
 把 DSH 里真实发生的工作，变成一张会生长的 RPG 角色卡。
 
+> 非官方社区插件，与 DeepSeek 官方无隶属关系。MIT 协议，按现状提供。
+
 DevQuest 观察 Agent 的回合、工具调用、代码行数、文件读写、待办清单、子代理和 workflow，将它们折算成经验、星币、装备、宝箱、成就、每日/每周/赛季 BOSS 与赛季通行证。它不修改 Agent 的循环，也不向对话写入任何内容；它只是坐在旁边，把已经发生的事讲成一段冒险。
 
 ## 一眼看到什么
@@ -81,10 +83,11 @@ DevQuest 观察 Agent 的回合、工具调用、代码行数、文件读写、�
 
 ## 数据与隐私
 
-- 状态保存在 `D:\SC\devquest\data\state.json`，随插件目录一起移动；由 Host 本地读写，不联网、不上传。
+- 状态保存在插件目录下的 `data/state.json`，随插件目录一起移动；由 Host 本地读写，**不联网、不上传、不含遥测**。
 - 只保存聚合计数和最近事件摘要，不保存完整的工具参数、对话文本或文件内容；工具摘要只记录工具名和文件基名，代码统计只保存行数。
 - 每个 Session 用游标去重，重启后不会重复结算已经处理过的 Session 事件。
 - Host 只在回环地址上注册 `/devquest/api`；页面同源读取。它不提供任何文件读取、命令执行或 Agent 控制能力。
+- 本仓库不包含任何人的存档；`.gitignore` 已经把 `data/` 排除在外。
 
 ## 安装
 
@@ -121,15 +124,15 @@ npm pack
 
 ### 方式三：Git 仓库 / npm
 
-本仓库：<https://github.com/Yanchha/->
+本仓库：<https://github.com/Yanchha/DeepSeek_DevQuest>
 
 对方可以直接：
 
 ```powershell
-dsh plugin --profile desktop add github:Yanchha/-
+dsh plugin --profile desktop add github:Yanchha/DeepSeek_DevQuest
 ```
 
-或在 `plugin_manager` 的 `install_bundle` 里填 `github:Yanchha/-`。若想公开发布到 npm，需要先把包名从 `@local/dsh-devquest` 改成你自己的 scope（例如 `@yourname/dsh-devquest`），再 `npm publish`，之后别人 `install_bundle "@yourname/dsh-devquest"` 即可。
+或在 `plugin_manager` 的 `install_bundle` 里填 `github:Yanchha/DeepSeek_DevQuest`。若想公开发布到 npm，需要先把包名从 `@local/dsh-devquest` 改成你自己的 scope（例如 `@yourname/dsh-devquest`），再 `npm publish`，之后别人 `install_bundle "@yourname/dsh-devquest"` 即可。
 
 ### 对方安装后会发生什么
 
