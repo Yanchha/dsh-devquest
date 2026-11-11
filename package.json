@@ -11,7 +11,7 @@
     "gamification",
     "rpg"
   ],
-  "description": "Turn agent turns, tool calls and lines of code into an RPG progression with a pixel battle arena, gear, chests, daily and season bosses, achievements and a season shop.",
+  "description": "Turn your DeepSeek Harness sessions into an RPG: XP, 217 gear pieces across 9 rarities, a pixel battle arena, daily/weekly/season bosses, achievements, synthesis, paragon levels and rebirth.",
   "engines": {
     "node": ">=20"
   },
