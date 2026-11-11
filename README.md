@@ -121,13 +121,15 @@ npm pack
 
 ### 方式三：Git 仓库 / npm
 
-推到 GitHub 后，对方可以直接：
+本仓库：<https://github.com/Yanchha/->
+
+对方可以直接：
 
 ```powershell
-dsh plugin --profile desktop add github:<用户名>/<仓库>
+dsh plugin --profile desktop add github:Yanchha/-
 ```
 
-或在 `plugin_manager` 的 `install_bundle` 里填 `github:<用户名>/<仓库>`。若想公开发布到 npm，需要先把包名从 `@local/dsh-devquest` 改成你自己的 scope（例如 `@yourname/dsh-devquest`），再 `npm publish`，之后别人 `install_bundle "@yourname/dsh-devquest"` 即可。
+或在 `plugin_manager` 的 `install_bundle` 里填 `github:Yanchha/-`。若想公开发布到 npm，需要先把包名从 `@local/dsh-devquest` 改成你自己的 scope（例如 `@yourname/dsh-devquest`），再 `npm publish`，之后别人 `install_bundle "@yourname/dsh-devquest"` 即可。
 
 ### 对方安装后会发生什么
 
