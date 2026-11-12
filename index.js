@@ -228,6 +228,9 @@ GEAR_CATALOG.push({
   source: 'peak',
   chest: false,
   signature: true,
+  // The peak skin is a wildcard: it joins whatever set you are closest to
+  // completing instead of forcing you out of a four-piece bonus.
+  wildcard: true,
 })
 
 const GEAR_BY_ID = Object.fromEntries(GEAR_CATALOG.map(item => [item.id, item]))
@@ -332,16 +335,28 @@ function gearFamily(id) {
 
 function gearSets(state) {
   const counts = new Map()
+  let wildcard = false
   for (const slot of GEAR_SLOTS) {
     const id = state.gear.equipped[slot]
     const item = id ? GEAR_BY_ID[id] : null
     if (!item) continue
+    if (item.wildcard) {
+      wildcard = true
+      continue
+    }
     const family = gearFamily(item.id)
     if (!family) continue
     const entry = counts.get(family) || { family, count: 0, slots: [], rarity: item.rarity, name: item.id }
     entry.count += 1
     entry.slots.push(slot)
     counts.set(family, entry)
+  }
+  if (wildcard && counts.size) {
+    // Join the set we are closest to finishing.
+    const best = [...counts.values()].sort((left, right) => (right.count - left.count) || left.family.localeCompare(right.family))[0]
+    best.count += 1
+    best.slots.push('frame')
+    best.wildcard = true
   }
   return [...counts.values()].map(entry => ({
     ...entry,
@@ -1790,6 +1805,7 @@ function gearView(state) {
       power: item.power,
       powerNow: itemPower(state, item.id),
       signature: item.signature === true,
+      wildcard: item.wildcard === true,
       count: Math.max(1, Number(state.gear.count?.[item.id]) || 1),
       affixes: Array.isArray(state.gear.affixes?.[item.id]) ? state.gear.affixes[item.id] : [],
       affixSlots: affixSlots(item.rarity),
