@@ -1215,6 +1215,7 @@ window.__ModuleLoader__.load({
       'hud.reset': '双击归位',
       'hud.level': 'Lv.{level}',
       'hud.xp': '{current} / {next} XP',
+      'hud.power': '战力 {power}（基础 {base}）',
       'hud.streak': '{days} 天连续',
       'hud.coins': '{coins}',
       'hud.quests': '{done}/{total} 委托',
@@ -2124,6 +2125,7 @@ window.__ModuleLoader__.load({
       'hud.reset': 'double-click to reset',
       'hud.level': 'Lv.{level}',
       'hud.xp': '{current} / {next} XP',
+      'hud.power': 'Power {power} (base {base})',
       'hud.streak': '{days}-day streak',
       'hud.coins': '{coins}',
       'hud.quests': '{done}/{total} quests',
@@ -3638,6 +3640,11 @@ window.__ModuleLoader__.load({
       .dq-hud-pop-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
       .dq-hud-pop-name { font-size: 12px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .dq-hud-pop-xp { font-size: 10px; color: var(--dsw-alias-label-secondary); font-variant-numeric: tabular-nums; }
+      .dq-hud-pop-power {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 10px; font-weight: 650; color: #ffb08a;
+        font-variant-numeric: tabular-nums;
+      }
       .dq-hud-pop-chips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
       .dq-hud-card .dq-hud-badge, .dq-hud-card .dq-hud-claim { pointer-events: none; }
       .dq-hud-stars {
@@ -7780,6 +7787,12 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'dq-hud-pop-name' }, player.name),
                 h('span', { className: 'dq-hud-lv' }, t('hud.level', { level: player.level }))),
               h('span', { className: 'dq-hud-pop-xp' }, t('hud.xp', { current: player.xpIntoLevel, next: player.xpForNext })),
+              h('span', { className: 'dq-hud-pop-power' },
+                h('span', { 'aria-hidden': true }, '⚔'),
+                t('hud.power', {
+                  power: compactNumber(player.gearPowerBoost || player.gearPower, localeTag()),
+                  base: compactNumber(player.gearPower, localeTag()),
+                })),
               h('span', { className: 'dq-hud-pop-chips' },
                 h('span', { className: 'dq-hud-chip' }, h(CoinIcon, { size: 9 }), t('hud.coins', { coins: compactNumber(player.coins, localeTag()) })),
                 h('span', { className: 'dq-hud-chip' }, h(FlameIcon, { size: 9 }), t('hud.streak', { days: player.streak })),
