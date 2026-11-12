@@ -1279,6 +1279,18 @@ window.__ModuleLoader__.load({
       'set.xp': '经验 +{value}%',
       'set.affix': '洗词条 -{value}%',
       'set.need': '再穿 1 件激活（{count} 件）',
+      'talent.title': '天赋',
+      'talent.hint': '每转生一世获得 1 点天赋，三条分支各 10 阶',
+      'talent.points': '可用 {points} 点',
+      'talent.sharp': '锋锐',
+      'talent.lore': '博识',
+      'talent.greed': '贪婪',
+      'talent.effect': '+{value}%',
+      'talent.reset': '重置天赋 · {cost}',
+      'toast.error.no-talent-point': '没有可用天赋点。',
+      'toast.error.talent-maxed': '这条分支已满阶。',
+      'toast.error.unknown-talent': '未知的天赋分支。',
+      'toast.error.nothing-to-reset': '还没有投过天赋点。',
       'affix.hint': '每件装备可洗出随机词条，重复洗会替换最弱的一条；伤害/经验/星币/暴击/掉落都实时生效。',
       'affix.empty': '还没有词条',
       'affix.rerollHint': '洗出一条新词条',
@@ -2165,6 +2177,18 @@ window.__ModuleLoader__.load({
       'set.xp': 'XP +{value}%',
       'set.affix': 'Reroll -{value}%',
       'set.need': 'One more piece to activate',
+      'talent.title': 'Talents',
+      'talent.hint': 'One talent point per rebirth, ten ranks per branch',
+      'talent.points': '{points} points',
+      'talent.sharp': 'Sharpness',
+      'talent.lore': 'Lore',
+      'talent.greed': 'Greed',
+      'talent.effect': '+{value}%',
+      'talent.reset': 'Reset talents · {cost}',
+      'toast.error.no-talent-point': 'No talent points available.',
+      'toast.error.talent-maxed': 'That branch is maxed.',
+      'toast.error.unknown-talent': 'Unknown talent branch.',
+      'toast.error.nothing-to-reset': 'No points invested yet.',
       'affix.hint': 'Each piece rolls random bonus lines; rerolling replaces the weakest one. Damage, XP, coins, crit and loot apply immediately.',
       'affix.empty': 'No affixes yet',
       'affix.rerollHint': 'Roll a new affix',
@@ -3960,6 +3984,31 @@ window.__ModuleLoader__.load({
       .dq-set-bonus { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
       .dq-set-bonus-line { font-size: 9px; font-weight: 600; color: var(--dsw-alias-label-primary); opacity: .9; }
       .dq-set-next { font-size: 9px; font-style: normal; color: var(--dsw-alias-label-secondary); }
+      .dq-talent-points {
+        font-size: 9.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+        border: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary);
+      }
+      .dq-talent-points.has-points {
+        color: #1a1408; border-color: transparent;
+        background: linear-gradient(135deg, #ffe9a8, #f2c14e);
+        box-shadow: 0 0 14px rgba(242, 193, 78, .5);
+      }
+      .dq-talent-rows { display: flex; flex-direction: column; gap: 7px; }
+      .dq-talent-row {
+        display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+        padding: 6px 8px; border-radius: 9px;
+        border: 1px solid color-mix(in srgb, var(--talent-tone) 26%, var(--dsw-alias-border-l1));
+        background: color-mix(in srgb, var(--talent-tone) 7%, transparent);
+      }
+      .dq-talent-glyph { text-align: center; font-size: 12px; color: var(--talent-tone); }
+      .dq-talent-top { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+      .dq-talent-top b { font-size: 10.5px; }
+      .dq-talent-rank { font-size: 9px; color: var(--talent-tone); font-weight: 700; }
+      .dq-talent-effect { font-size: 9px; color: var(--dsw-alias-label-secondary); }
+      .dq-talent-bar { margin-top: 4px; height: 3px; border-radius: 999px; background: color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent); overflow: hidden; }
+      .dq-talent-bar i { display: block; height: 100%; border-radius: inherit; background: var(--talent-tone); }
+      .dq-talent-add { width: 26px; padding: 2px 0; font-size: 13px; line-height: 1; }
+      .dq-talent-foot { margin-top: 8px; text-align: right; }
       /* Affix lines under each equipped piece. */
       .dq-affix-row { align-items: center; }
       .dq-affix-lines { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
@@ -6002,6 +6051,8 @@ window.__ModuleLoader__.load({
                 onOpenChest: () => runAction('open-chest', 'open-chest'),
                 onClaimBoss,
                 onClaimAll: () => runAction('claim-all', 'claim-all'),
+                onSpendTalent: branch => runAction(`talent:${branch}`, 'spend-talent', { branch }),
+                onResetTalents: () => runAction('reset-talents', 'reset-talents'),
               }) : null,
               tab === 'quests' ? h(QuestsTab, {
                 data,
@@ -6261,7 +6312,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'dq-hero-stat-value' }, value))
       }
 
-      function Overview({ data, t, locale, now, busy, claimable, moments, onTab, onClaim, onLottery, onOpenChest, onClaimBoss, onClaimAll }) {
+      function Overview({ data, t, locale, now, busy, claimable, moments, onTab, onClaim, onLottery, onOpenChest, onClaimBoss, onClaimAll, onSpendTalent, onResetTalents }) {
         const player = data.player
         const completed = data.daily.challenges.filter(item => item.claimed).length
         const latest = Object.entries(player.achievements)
@@ -6334,6 +6385,7 @@ window.__ModuleLoader__.load({
               recentCards.length ? h('div', { className: 'dq-ach-grid' }, recentCards) : h('div', { className: 'dq-empty' }, t('overview.noAchievements')))),
           h('aside', { className: 'dq-stack' },
             h(ClassCard, { player, t }),
+            h(TalentCard, { player, t, locale, busy, onSpend: onSpendTalent, onReset: onResetTalents }),
             h(ChestCard, { data, t, locale, busy, onOpenChest, compact: true }),
             h(BossOverviewCard, { data, t, now, onOpenBosses: () => onTab('bosses') }),
             h(LotteryCard, { data, t, busy, onLottery }),
@@ -6979,6 +7031,57 @@ window.__ModuleLoader__.load({
       // Each rung gets its own colour so the ladder reads as a progression
       // rather than six identical dots.
       const CLASS_TIER_TONES = ['#6fd6a0', '#4fd1c5', '#7f9dff', '#b07fff', '#ff9a6b', '#f2c14e', '#ff7ad9', '#7cf0ff']
+
+      // Rebirth talent tree: one point per life, three branches.
+      function TalentCard({ player, t, locale, busy, onSpend, onReset }) {
+        const talents = player.talents || {}
+        const max = player.talentMax || 10
+        const points = player.talentPoints || 0
+        const branches = [
+          { key: 'sharp', step: 4, tone: '#ff6b6b', glyph: '⚔' },
+          { key: 'lore', step: 6, tone: '#7f9dff', glyph: '✦' },
+          { key: 'greed', step: 8, tone: '#f2c14e', glyph: '◈' },
+        ]
+        const spent = branches.reduce((sum, branch) => sum + (Number(talents[branch.key]) || 0), 0)
+        return h('section', { className: 'dq-card dq-talent' },
+          h('div', { className: 'dq-card-head' },
+            h('div', null,
+              h('div', { className: 'dq-card-title' },
+                h('span', { className: 'dq-card-title-glyph' }, '✧'),
+                t('talent.title')),
+              h('div', { className: 'dq-card-sub' }, t('talent.hint'))),
+            h('span', { className: `dq-talent-points${points > 0 ? ' has-points' : ''}` },
+              t('talent.points', { points }))),
+          h('div', { className: 'dq-talent-rows' },
+            branches.map(branch => {
+              const rank = Number(talents[branch.key]) || 0
+              const canAdd = points > 0 && rank < max
+              return h('div', { key: branch.key, className: 'dq-talent-row', style: { '--talent-tone': branch.tone } },
+                h('span', { className: 'dq-talent-glyph', 'aria-hidden': true }, branch.glyph),
+                h('div', { className: 'dq-talent-main' },
+                  h('div', { className: 'dq-talent-top' },
+                    h('b', null, t(`talent.${branch.key}`)),
+                    h('span', { className: 'dq-talent-rank' }, `${rank}/${max}`),
+                    h('span', { className: 'dq-talent-effect' }, t('talent.effect', { value: rank * branch.step }))),
+                  h('div', { className: 'dq-talent-bar' },
+                    h('i', { style: { width: `${Math.round((rank / max) * 100)}%` } }))),
+                h('button', {
+                  type: 'button',
+                  className: 'dq-btn ghost dq-talent-add',
+                  disabled: Boolean(busy) || !canAdd,
+                  onClick: () => onSpend(branch.key),
+                }, '+'))
+            })),
+          spent > 0
+            ? h('div', { className: 'dq-talent-foot' },
+              h('button', {
+                type: 'button',
+                className: 'dq-text-btn',
+                disabled: Boolean(busy),
+                onClick: onReset,
+              }, t('talent.reset', { cost: formatNumber(20000 * Math.max(1, player.rebirths || 1), locale) })))
+            : null)
+      }
 
       function ClassCard({ player, t }) {
         const info = player.class

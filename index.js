@@ -889,6 +889,7 @@ function baseState() {
       lastActiveDay: null,
       equippedTitle: 'novice',
       rebirths: 0,
+      talents: { sharp: 0, lore: 0, greed: 0 },
     },
     titles: { owned: ['novice'] },
     stats: {
@@ -1090,12 +1091,50 @@ function normalizeSeasonChallenge(season, kind) {
   }
 }
 
+// Rebirth talents: one point per life, three branches, ten ranks each.
+const TALENT_MAX = 10
+const TALENT_TONES = { sharp: '#ff6b6b', lore: '#7f9dff', greed: '#f2c14e' }
+const TALENT_STEP = { sharp: 4, lore: 6, greed: 8 }
+
+function talentPoints(state) {
+  const lives = Math.max(0, Number(state.profile.rebirths) || 0)
+  const spent = Object.values(state.profile.talents || {}).reduce((sum, value) => sum + (Number(value) || 0), 0)
+  return Math.max(0, lives - spent)
+}
+
+function talentBonus(state) {
+  const talents = state.profile.talents || {}
+  return {
+    damage: Math.round((Number(talents.sharp) || 0) * TALENT_STEP.sharp),
+    xp: Math.round((Number(talents.lore) || 0) * TALENT_STEP.lore),
+    coins: Math.round((Number(talents.greed) || 0) * TALENT_STEP.greed),
+  }
+}
+
 function normalizeState(raw) {
   const state = baseState()
   if (!raw || typeof raw !== 'object') return normalizeState(createState())
   Object.assign(state, raw)
   state.version = STATE_VERSION
   state.profile = { ...baseState().profile, ...(raw.profile || {}) }
+  // Talent points: one per rebirth, spread over three branches, ten per branch.
+  {
+    const rebirths = Math.max(0, Number(state.profile.rebirths) || 0)
+    const rawTalents = state.profile.talents && typeof state.profile.talents === 'object' ? state.profile.talents : {}
+    const talents = {
+      sharp: Math.max(0, Math.min(TALENT_MAX, Math.floor(Number(rawTalents.sharp) || 0))),
+      lore: Math.max(0, Math.min(TALENT_MAX, Math.floor(Number(rawTalents.lore) || 0))),
+      greed: Math.max(0, Math.min(TALENT_MAX, Math.floor(Number(rawTalents.greed) || 0))),
+    }
+    let spent = talents.sharp + talents.lore + talents.greed
+    while (spent > rebirths && (talents.greed || talents.lore || talents.sharp)) {
+      if (talents.greed) talents.greed -= 1
+      else if (talents.lore) talents.lore -= 1
+      else talents.sharp -= 1
+      spent -= 1
+    }
+    state.profile.talents = talents
+  }
   state.titles = { owned: ['novice'], ...(raw.titles || {}) }
   state.stats = { ...baseState().stats, ...(raw.stats || {}) }
   state.stats.distinctTools = Array.isArray(raw.stats?.distinctTools)
@@ -1247,6 +1286,7 @@ function addActivity(state, entry) {
   if (state.activity.length > MAX_ACTIVITY) state.activity.length = MAX_ACTIVITY
 }
 
+
 function rebirthBonus(state) {
   const lives = Math.max(0, Number(state.profile.rebirths) || 0)
   return {
@@ -1263,7 +1303,8 @@ function awardXp(state, amount) {
   const bonus = rebirthBonus(state)
   const affix = affixTotals(state)
   const sets = setTotals(state)
-  const scaled = Math.round(value * (1 + bonus.xp / 100) * (1 + affix.xp / 100) * (1 + sets.xp / 100))
+  const talent = talentBonus(state)
+  const scaled = Math.round(value * (1 + bonus.xp / 100) * (1 + affix.xp / 100) * (1 + sets.xp / 100) * (1 + talent.xp / 100))
   // XP past the cap does not buy stars any more: stars come from rebirths, so
   // experience simply stops at the ceiling until the player resets.
   const capXp = xpThreshold(MAX_LEVEL)
@@ -1297,8 +1338,8 @@ function grantPeakSkin(state) {
 function grantCoins(state, amount) {
   const raw = Math.max(0, Math.round(Number(amount) || 0))
   if (!raw) return 0
-  const bonus = affixTotals(state).coins
-  const value = bonus > 0 ? Math.round(raw * (1 + bonus / 100)) : raw
+  const coinBonus = affixTotals(state).coins + talentBonus(state).coins
+  const value = coinBonus > 0 ? Math.round(raw * (1 + coinBonus / 100)) : raw
   state.profile.coins += value
   state.stats.totalCoinsEarned += value
   return value
@@ -1613,6 +1654,7 @@ function damageAllBosses(state, base) {
   const rebirth = rebirthBonus(state)
   const affix = affixTotals(state)
   const sets = setTotals(state)
+  const talent = talentBonus(state)
   const crit = affix.crit > 0 && Math.random() * 100 < affix.crit ? 1.8 : 1
   const amount = Math.max(1, Math.round(Number(base)
     * (1 + gearPower(state) / 220)
@@ -1620,6 +1662,7 @@ function damageAllBosses(state, base) {
     * (1 + rebirth.damage / 100)
     * (1 + affix.damage / 100)
     * (1 + sets.damage / 100)
+    * (1 + talent.damage / 100)
     * crit))
   if (state.season) state.season.renown += amount
   applyBossDamage(state, state.dailyBoss, amount, 'daily')
@@ -1916,6 +1959,10 @@ function buildSnapshot(state) {
       paragon,
       rebirths: rebirthBonus(state).lives,
       rebirth: rebirthBonus(state),
+      talents: state.profile.talents || { sharp: 0, lore: 0, greed: 0 },
+      talentMax: TALENT_MAX,
+      talentPoints: talentPoints(state),
+      talentBonus: talentBonus(state),
       affix: affixTotals(state),
       sets: gearSets(state),
       setTotals: setTotals(state),
@@ -2298,6 +2345,27 @@ function applyAction(state, payload) {
     locks[index] = !locks[index]
     state.gear.affixLock[item.id] = locks
     return { ok: true, index, locked: locks[index], state: buildSnapshot(state) }
+  }
+  if (action === 'spend-talent') {
+    const branch = String(payload?.branch || '')
+    if (!['sharp', 'lore', 'greed'].includes(branch)) return fail(state, 'unknown-talent')
+    if (talentPoints(state) <= 0) return fail(state, 'no-talent-point')
+    if (!state.profile.talents || typeof state.profile.talents !== 'object') state.profile.talents = { sharp: 0, lore: 0, greed: 0 }
+    const current = Math.max(0, Math.min(TALENT_MAX, Number(state.profile.talents[branch]) || 0))
+    if (current >= TALENT_MAX) return fail(state, 'talent-maxed')
+    state.profile.talents[branch] = current + 1
+    addActivity(state, { kind: 'talent', branch, rank: current + 1 })
+    evaluateAchievements(state)
+    return { ok: true, branch, rank: current + 1, bonus: talentBonus(state), state: buildSnapshot(state) }
+  }
+  if (action === 'reset-talents') {
+    const spent = 3 * 0 + (Number(state.profile.talents?.sharp) || 0) + (Number(state.profile.talents?.lore) || 0) + (Number(state.profile.talents?.greed) || 0)
+    if (!spent) return fail(state, 'nothing-to-reset')
+    const cost = 20000 * Math.max(1, Number(state.profile.rebirths) || 1)
+    if (state.profile.coins < cost) return fail(state, 'not-enough-coins')
+    state.profile.coins -= cost
+    state.profile.talents = { sharp: 0, lore: 0, greed: 0 }
+    return { ok: true, cost, state: buildSnapshot(state) }
   }
   if (action === 'rebirth') {
     const level = levelForXp(state.profile.xp)

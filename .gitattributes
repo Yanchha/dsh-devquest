@@ -1,0 +1,6 @@
+# Keep the shipped sources LF so the diff only shows real changes.
+* text=auto eol=lf
+
+*.png binary
+*.webp binary
+*.tgz binary
