@@ -1255,6 +1255,7 @@ window.__ModuleLoader__.load({
       'gear.title': '装备与工坊',
       'gear.subtitle': '武器、护甲、护符与头像框。战力会放大对 BOSS 的伤害。',
       'gear.power': '战力',
+      'gear.powerBase': '装备基础战力 {power}（不含词条/套装/天赋/转生加成）',
       'enhance.title': '强化',
       'enhance.hint': '每级 +2% 战力，最高 +{max}',
       'ascend.title': '进阶',
@@ -2163,6 +2164,7 @@ window.__ModuleLoader__.load({
       'gear.title': 'Gear & workshop',
       'gear.subtitle': 'Weapons, armor, charms and avatar frames. Gear power amplifies boss damage.',
       'gear.power': 'Power',
+      'gear.powerBase': 'Gear base power {power} (excluding affix/set/talent/rebirth bonuses)',
       'enhance.title': 'Enhance',
       'enhance.hint': '+2% power per level, up to +{max}',
       'ascend.title': 'Ascend',
@@ -6281,7 +6283,7 @@ window.__ModuleLoader__.load({
                     })),
                   h('span', { className: `dq-chip dq-chip-power${moments.powerUp ? ' is-up' : ''}` },
                     h('span', { 'aria-hidden': true }, '⚔'),
-                    t('hero.gearPower', { power: player.gearPower }),
+                    t('hero.gearPower', { power: player.gearPowerBoost || player.gearPower }),
                     moments.powerUp
                       ? h('span', { key: `pw:${moments.powerUp}`, className: 'dq-power-pop' }, `+${moments.powerUp}`)
                       : null)))),
@@ -6670,7 +6672,8 @@ window.__ModuleLoader__.load({
                 h('div', { className: 'dq-card-sub' }, t('gear.subtitle'))),
               h('div', { className: 'dq-gear-power' },
                 h('span', { className: 'dq-gear-power-label' }, t('gear.power')),
-                h('strong', null, formatNumber(gear.power, locale)))),
+                h('strong', { title: t('gear.powerBase', { power: formatNumber(player.gearPower, locale) }) },
+                  formatNumber(player.gearPowerBoost || gear.power, locale)))),
             h('div', { className: 'dq-gear-body' },
               h('div', {
                 className: 'dq-doll',
