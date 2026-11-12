@@ -44,6 +44,8 @@ DevQuest 监听 DSH 暴露的会话事件，把「真实发生的工作」折算
 
 ## 安装
 
+包名：**`@yanchha/dsh-devquest`**（与 npm 上已有的 `dsh-devquest` 不冲突）
+
 ### 从 GitHub 安装（推荐）
 
 ```powershell
@@ -52,6 +54,12 @@ dsh plugin --profile desktop add github:Yanchha/dsh-devquest
 
 或者在 DSH 里让 Agent 执行：`plugin_manager` → `install_bundle`，target 填 `github:Yanchha/dsh-devquest`。
 
+### 从 npm 安装（发布后）
+
+```powershell
+dsh plugin --profile desktop add @yanchha/dsh-devquest
+```
+
 ### 从本地目录安装
 
 把仓库克隆/下载到任意位置，然后让 Agent 执行 `install_bundle`，target 指向该目录。
@@ -59,7 +67,7 @@ dsh plugin --profile desktop add github:Yanchha/dsh-devquest
 ### 从压缩包安装
 
 ```powershell
-npm pack          # 生成 dsh-devquest-<version>.tgz
+npm pack          # 生成 yanchha-dsh-devquest-<version>.tgz
 ```
 
 解压后同样用 `install_bundle` 指向 `package/` 目录。

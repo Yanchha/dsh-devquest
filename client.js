@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/dsh-devquest',
+  id: '@yanchha/dsh-devquest',
   factory(require) {
     const React = require('react')
     const h = React.createElement
