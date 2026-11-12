@@ -855,9 +855,9 @@ window.__ModuleLoader__.load({
     const GEAR_ICON_FALLBACK = { weapon: 'dagger', armor: 'coat', charm: 'gem' }
 
     const ZH = {
-      'nav.title': 'DevQuest',
-      'nav.subtitle': '冒险者公会',
-      'nav.open': '打开 DevQuest 冒险者公会',
+      'nav.title': '冒险者公会',
+      'nav.subtitle': 'DevQuest',
+      'nav.open': '打开冒险者公会',
       'page.eyebrow': 'DEVQUEST · 冒险者日志',
       'page.title': '冒险者公会',
       'page.subtitle': '每一次工具调用，都是史诗的一行。',
@@ -1210,7 +1210,7 @@ window.__ModuleLoader__.load({
       'toast.error.unknown': '操作没有完成，请重试。',
       'toast.error.network': '无法连接 Host，请稍后重试。',
       'toast.titleChanged': '冒险者名已更新',
-      'hud.open': '打开 DevQuest 冒险者公会',
+      'hud.open': '打开冒险者公会',
       'hud.move': '按住拖动，放到任意位置',
       'hud.reset': '双击归位',
       'hud.level': 'Lv.{level}',
@@ -1753,9 +1753,9 @@ window.__ModuleLoader__.load({
     }
 
     const EN = {
-      'nav.title': 'DevQuest',
-      'nav.subtitle': "Adventurer's Guild",
-      'nav.open': "Open DevQuest Adventurer's Guild",
+      'nav.title': "Adventurer's Guild",
+      'nav.subtitle': 'DevQuest',
+      'nav.open': "Open the Adventurer's Guild",
       'page.eyebrow': 'DEVQUEST · ADVENTURER LOG',
       'page.title': "Adventurer's Guild",
       'page.subtitle': 'Every tool call is a line in the epic.',
@@ -2108,7 +2108,7 @@ window.__ModuleLoader__.load({
       'toast.error.unknown': 'The action did not complete. Try again.',
       'toast.error.network': 'Could not reach the Host. Try again shortly.',
       'toast.titleChanged': 'Adventurer name updated',
-      'hud.open': "Open DevQuest Adventurer's Guild",
+      'hud.open': "Open the Adventurer's Guild",
       'hud.move': 'Drag it anywhere',
       'hud.reset': 'double-click to reset',
       'hud.level': 'Lv.{level}',
