@@ -2002,10 +2002,13 @@ function buildSnapshot(state) {
       gearPowerBoost: (() => {
         // Shown power folds in every multiplier so the number matches what the
         // player actually hits for; the damage formula still uses the base.
-        const bonus = affixTotals(state).damage + setTotals(state).damage + talentBonus(state).damage + rebirthBonus(state).damage
+        const bonus = affixTotals(state).damage + setTotals(state).damage + talentBonus(state).damage
+          + rebirthBonus(state).damage + classDamageBonus(state) * 100
         return Math.round(gearPower(state) * (1 + bonus / 100))
       })(),
-      powerBonus: Math.round(affixTotals(state).damage + setTotals(state).damage + talentBonus(state).damage + rebirthBonus(state).damage),
+      powerBonus: Math.round(affixTotals(state).damage + setTotals(state).damage + talentBonus(state).damage
+        + rebirthBonus(state).damage + classDamageBonus(state) * 100),
+      classBonus: Math.round(classDamageBonus(state) * 100),
       ownedTitles: state.titles.owned,
       achievements: state.achievements,
       achievementRewards: Object.fromEntries(ACHIEVEMENTS.map(item => [item.id, item.coins || 0])),

@@ -6330,7 +6330,7 @@ window.__ModuleLoader__.load({
                 const sets = player.setTotals || {}
                 const talent = player.talentBonus || {}
                 const rebirth = player.rebirth || {}
-                const damage = Math.round((affix.damage || 0) + (sets.damage || 0) + (talent.damage || 0) + (rebirth.damage || 0))
+                const damage = Math.round((affix.damage || 0) + (sets.damage || 0) + (talent.damage || 0) + (rebirth.damage || 0) + (player.classBonus || 0))
                 const xp = Math.round((affix.xp || 0) + (sets.xp || 0) + (talent.xp || 0) + (rebirth.xp || 0))
                 const coins = Math.round((affix.coins || 0) + (talent.coins || 0))
                 const crit = Math.round(affix.crit || 0)
