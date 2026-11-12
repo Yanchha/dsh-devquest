@@ -856,9 +856,9 @@ window.__ModuleLoader__.load({
 
     const ZH = {
       'nav.title': '冒险者公会',
-      'nav.subtitle': 'DevQuest',
+      'nav.subtitle': '冒险者日志',
       'nav.open': '打开冒险者公会',
-      'page.eyebrow': 'DEVQUEST · 冒险者日志',
+      'page.eyebrow': '冒险者日志',
       'page.title': '冒险者公会',
       'page.subtitle': '每一次工具调用，都是史诗的一行。',
       'page.back': '返回对话',
@@ -1220,7 +1220,7 @@ window.__ModuleLoader__.load({
       'hud.quests': '{done}/{total} 委托',
       'hud.boss': 'BOSS {percent}%',
       'hud.loading': '冒险记录读取中',
-      'hud.error': 'DevQuest 离线',
+      'hud.error': '冒险者公会离线',
       'time.justNow': '刚刚',
       'time.minutesAgo': '{n} 分钟前',
       'time.hoursAgo': '{n} 小时前',
@@ -1754,9 +1754,9 @@ window.__ModuleLoader__.load({
 
     const EN = {
       'nav.title': "Adventurer's Guild",
-      'nav.subtitle': 'DevQuest',
+      'nav.subtitle': 'Adventurer log',
       'nav.open': "Open the Adventurer's Guild",
-      'page.eyebrow': 'DEVQUEST · ADVENTURER LOG',
+      'page.eyebrow': 'ADVENTURER LOG',
       'page.title': "Adventurer's Guild",
       'page.subtitle': 'Every tool call is a line in the epic.',
       'page.back': 'Back to chat',
@@ -2118,7 +2118,7 @@ window.__ModuleLoader__.load({
       'hud.quests': '{done}/{total} quests',
       'hud.boss': 'BOSS {percent}%',
       'hud.loading': 'Reading adventure log',
-      'hud.error': 'DevQuest offline',
+      'hud.error': 'Adventurer log offline',
       'time.justNow': 'just now',
       'time.minutesAgo': '{n}m ago',
       'time.hoursAgo': '{n}h ago',
