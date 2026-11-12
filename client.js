@@ -3090,13 +3090,14 @@ window.__ModuleLoader__.load({
         position: relative;
       }
       .dq-chip-power.is-up { box-shadow: 0 0 16px color-mix(in srgb, #ff9a6b 45%, transparent); }
-      .dq-hero-buffs { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
-      .dq-buff-pill {
-        font-size: 9px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
-        color: color-mix(in srgb, var(--buff-tone) 82%, #ffffff);
-        border: 1px solid color-mix(in srgb, var(--buff-tone) 40%, transparent);
-        background: color-mix(in srgb, var(--buff-tone) 12%, transparent);
+      .dq-hero-buffs {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+        margin-bottom: 6px; font-size: 9.5px; line-height: 1.2;
+        color: var(--dsw-alias-label-secondary);
       }
+      .dq-buff-item { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+      .dq-buff-item b { font-weight: 650; }
+      .dq-buff-sep { opacity: .45; }
       .dq-hero-progress { align-self: center; min-width: 0; }
       .dq-progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
       .dq-progress-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
@@ -6259,32 +6260,6 @@ window.__ModuleLoader__.load({
                     moments.powerUp
                       ? h('span', { key: `pw:${moments.powerUp}`, className: 'dq-power-pop' }, `+${moments.powerUp}`)
                       : null)))),
-            (() => {
-              // Affixes, sets, talents and rebirths all multiply the actual
-              // output without touching the power number, so surface them.
-              const affix = player.affix || {}
-              const sets = player.setTotals || {}
-              const talent = player.talentBonus || {}
-              const rebirth = player.rebirth || {}
-              const damage = Math.round((affix.damage || 0) + (sets.damage || 0) + (talent.damage || 0) + (rebirth.damage || 0))
-              const xp = Math.round((affix.xp || 0) + (sets.xp || 0) + (talent.xp || 0) + (rebirth.xp || 0))
-              const coins = Math.round((affix.coins || 0) + (talent.coins || 0))
-              const crit = Math.round(affix.crit || 0)
-              const pills = [
-                damage ? { key: 'damage', tone: '#ff6b6b', text: t('buff.damage', { value: damage }) } : null,
-                xp ? { key: 'xp', tone: '#7f9dff', text: t('buff.xp', { value: xp }) } : null,
-                coins ? { key: 'coins', tone: '#f2c14e', text: t('buff.coins', { value: coins }) } : null,
-                crit ? { key: 'crit', tone: '#ff7ad9', text: t('buff.crit', { value: crit }) } : null,
-              ].filter(Boolean)
-              if (!pills.length) return null
-              return h('div', { className: 'dq-hero-buffs' },
-                pills.map(pill => h('span', {
-                  key: pill.key,
-                  className: 'dq-buff-pill',
-                  style: { '--buff-tone': pill.tone },
-                  title: t('buff.hint'),
-                }, pill.text)))
-            })(),
             player.rebirth && player.rebirth.lives > 0 || rebirthReady
               ? h('div', { className: 'dq-rebirth' },
                 h('span', { className: 'dq-rebirth-badge' },
@@ -6314,6 +6289,29 @@ window.__ModuleLoader__.load({
                   : null)
               : null,
             h('div', { className: 'dq-hero-progress' },
+              (() => {
+                // Affixes, sets, talents and rebirths multiply the real output
+                // without touching the power number, so surface them here.
+                const affix = player.affix || {}
+                const sets = player.setTotals || {}
+                const talent = player.talentBonus || {}
+                const rebirth = player.rebirth || {}
+                const damage = Math.round((affix.damage || 0) + (sets.damage || 0) + (talent.damage || 0) + (rebirth.damage || 0))
+                const xp = Math.round((affix.xp || 0) + (sets.xp || 0) + (talent.xp || 0) + (rebirth.xp || 0))
+                const coins = Math.round((affix.coins || 0) + (talent.coins || 0))
+                const crit = Math.round(affix.crit || 0)
+                const items = [
+                  damage ? { key: 'damage', tone: '#ff6b6b', text: t('buff.damage', { value: damage }) } : null,
+                  xp ? { key: 'xp', tone: '#7f9dff', text: t('buff.xp', { value: xp }) } : null,
+                  coins ? { key: 'coins', tone: '#f2c14e', text: t('buff.coins', { value: coins }) } : null,
+                  crit ? { key: 'crit', tone: '#ff7ad9', text: t('buff.crit', { value: crit }) } : null,
+                ].filter(Boolean)
+                if (!items.length) return null
+                return h('div', { className: 'dq-hero-buffs', title: t('buff.hint') },
+                  items.map((item, index) => h('span', { key: item.key, className: 'dq-buff-item' },
+                    index > 0 ? h('span', { className: 'dq-buff-sep', 'aria-hidden': true }, '·') : null,
+                    h('b', { style: { color: item.tone } }, item.text))))
+              })(),
               h('div', { className: 'dq-progress-top' },
                 h('span', { className: 'dq-progress-label' }, t('hero.xp', { current: formatNumber(player.xpIntoLevel, locale), next: formatNumber(player.xpForNext, locale) })),
                 h('span', { className: 'dq-progress-value' }, `${player.xpPercent}%`)),
