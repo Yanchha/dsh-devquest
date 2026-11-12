@@ -1,6 +1,6 @@
 {
-  "name": "@yanchha/dsh-devquest",
-  "version": "9.1.0",
+  "name": "dsh-devquest-guild",
+  "version": "9.2.0",
   "type": "module",
   "license": "MIT",
   "author": "Yanchha",
@@ -19,9 +19,6 @@
   "homepage": "https://github.com/Yanchha/dsh-devquest#readme",
   "bugs": {
     "url": "https://github.com/Yanchha/dsh-devquest/issues"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "engines": {
     "node": ">=20"
