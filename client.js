@@ -1280,6 +1280,11 @@ window.__ModuleLoader__.load({
       'set.affix': '洗词条 -{value}%',
       'set.need': '再穿 1 件激活（{count} 件）',
       'talent.title': '天赋',
+      'buff.damage': '伤害 +{value}%',
+      'buff.xp': '经验 +{value}%',
+      'buff.coins': '星币 +{value}%',
+      'buff.crit': '暴击 +{value}%',
+      'buff.hint': '词条、套装、天赋、转生加成的合计；这些直接乘算实际伤害/经验/星币，不计入战力数字。',
       'talent.hint': '每转生一世获得 1 点天赋，三条分支各 10 阶',
       'talent.points': '可用 {points} 点',
       'talent.sharp': '锋锐',
@@ -2178,6 +2183,11 @@ window.__ModuleLoader__.load({
       'set.affix': 'Reroll -{value}%',
       'set.need': 'One more piece to activate',
       'talent.title': 'Talents',
+      'buff.damage': 'Damage +{value}%',
+      'buff.xp': 'XP +{value}%',
+      'buff.coins': 'Coins +{value}%',
+      'buff.crit': 'Crit +{value}%',
+      'buff.hint': 'Sum of affix, set, talent and rebirth bonuses. They multiply real damage/XP/coins and are not part of the power number.',
       'talent.hint': 'One talent point per rebirth, ten ranks per branch',
       'talent.points': '{points} points',
       'talent.sharp': 'Sharpness',
@@ -3080,6 +3090,13 @@ window.__ModuleLoader__.load({
         position: relative;
       }
       .dq-chip-power.is-up { box-shadow: 0 0 16px color-mix(in srgb, #ff9a6b 45%, transparent); }
+      .dq-hero-buffs { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+      .dq-buff-pill {
+        font-size: 9px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+        color: color-mix(in srgb, var(--buff-tone) 82%, #ffffff);
+        border: 1px solid color-mix(in srgb, var(--buff-tone) 40%, transparent);
+        background: color-mix(in srgb, var(--buff-tone) 12%, transparent);
+      }
       .dq-hero-progress { align-self: center; min-width: 0; }
       .dq-progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
       .dq-progress-label { font-size: 11px; color: var(--dsw-alias-label-secondary); }
@@ -6242,6 +6259,32 @@ window.__ModuleLoader__.load({
                     moments.powerUp
                       ? h('span', { key: `pw:${moments.powerUp}`, className: 'dq-power-pop' }, `+${moments.powerUp}`)
                       : null)))),
+            (() => {
+              // Affixes, sets, talents and rebirths all multiply the actual
+              // output without touching the power number, so surface them.
+              const affix = player.affix || {}
+              const sets = player.setTotals || {}
+              const talent = player.talentBonus || {}
+              const rebirth = player.rebirth || {}
+              const damage = Math.round((affix.damage || 0) + (sets.damage || 0) + (talent.damage || 0) + (rebirth.damage || 0))
+              const xp = Math.round((affix.xp || 0) + (sets.xp || 0) + (talent.xp || 0) + (rebirth.xp || 0))
+              const coins = Math.round((affix.coins || 0) + (talent.coins || 0))
+              const crit = Math.round(affix.crit || 0)
+              const pills = [
+                damage ? { key: 'damage', tone: '#ff6b6b', text: t('buff.damage', { value: damage }) } : null,
+                xp ? { key: 'xp', tone: '#7f9dff', text: t('buff.xp', { value: xp }) } : null,
+                coins ? { key: 'coins', tone: '#f2c14e', text: t('buff.coins', { value: coins }) } : null,
+                crit ? { key: 'crit', tone: '#ff7ad9', text: t('buff.crit', { value: crit }) } : null,
+              ].filter(Boolean)
+              if (!pills.length) return null
+              return h('div', { className: 'dq-hero-buffs' },
+                pills.map(pill => h('span', {
+                  key: pill.key,
+                  className: 'dq-buff-pill',
+                  style: { '--buff-tone': pill.tone },
+                  title: t('buff.hint'),
+                }, pill.text)))
+            })(),
             player.rebirth && player.rebirth.lives > 0 || rebirthReady
               ? h('div', { className: 'dq-rebirth' },
                 h('span', { className: 'dq-rebirth-badge' },
