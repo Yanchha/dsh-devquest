@@ -7759,7 +7759,7 @@ window.__ModuleLoader__.load({
                 className: 'dq-hud-stars',
                 title: t('paragon.stars', { stars: player.paragon.stars }),
                 'aria-label': t('paragon.stars', { stars: player.paragon.stars }),
-              }, '★')
+              }, `★${player.paragon.stars}`)
               : null,
             claimable ? h('span', { className: 'dq-hud-claim', 'aria-hidden': true }) : null,
             h('span', { className: 'dq-hud-xpbar', 'aria-hidden': true },
