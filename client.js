@@ -2987,18 +2987,19 @@ window.__ModuleLoader__.load({
         position: absolute; inset: 0; pointer-events: none; z-index: 2;
       }
       .dq-crest-gem {
-        position: absolute; width: 5px; height: 5px; border-radius: 1px;
-        transform: translate(-50%, -50%) rotate(45deg);
-        background: linear-gradient(135deg, #fff3c4, #ffb43c 55%, #b26a12);
-        box-shadow: 0 0 6px rgba(255, 190, 80, .85), inset 0 0 2px rgba(255, 255, 255, .8);
+        position: absolute; width: auto; height: auto;
+        transform: translate(-50%, -50%);
+        font-size: 7px; line-height: 1; font-style: normal;
+        color: #ffe9a8;
+        text-shadow: 0 0 4px rgba(255, 210, 120, .95), 0 0 8px rgba(255, 180, 60, .6);
       }
       .dq-crest-gems.is-maxed .dq-crest-gem {
-        background: linear-gradient(135deg, #ffffff, #ffe9a8 50%, #ffb43c);
-        box-shadow: 0 0 8px rgba(255, 236, 170, .95), inset 0 0 2px rgba(255, 255, 255, .95);
+        color: #ffffff;
+        text-shadow: 0 0 5px #fff, 0 0 10px rgba(255, 233, 168, .95);
         animation: dq-frame-pulse 2.6s ease-in-out infinite;
       }
-      .dq-crest[data-size="mini"] .dq-crest-gem { width: 4px; height: 4px; }
-      .dq-crest[data-size="hud"] .dq-crest-gem { width: 3px; height: 3px; }
+      .dq-crest[data-size="mini"] .dq-crest-gem { font-size: 6px; }
+      .dq-crest[data-size="hud"] .dq-crest-gem { font-size: 5px; }
       .dq-hero-copy { min-width: 0; }
       .dq-name-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
       .dq-hero-name { font-size: 25px; line-height: 1.15; font-weight: 680; letter-spacing: -.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3543,8 +3544,8 @@ window.__ModuleLoader__.load({
         box-shadow: var(--frame-glow);
       }
       .dq-hud-hero { display: block; width: 100%; height: 100%; }
-      .dq-hud-gems { inset: 2px; }
-      .dq-hud-gems .dq-crest-gem { width: 3.5px; height: 3.5px; }
+      .dq-hud-gems { inset: 3px; }
+      .dq-hud-gems .dq-crest-gem { font-size: 6px; }
       /* Painted portrait replaces the pixel figure when the bundle ships one. */
       .dq-portrait {
         object-fit: cover;
@@ -5762,7 +5763,7 @@ window.__ModuleLoader__.load({
               key: index,
               className: 'dq-crest-gem',
               style: { left: `${slot.x}%`, top: `${slot.y}%` },
-            })))
+            }, '★')))
           : null)
       }
 
@@ -7751,7 +7752,7 @@ window.__ModuleLoader__.load({
                   title: t('rebirth.lives', { lives: player.rebirths }),
                 },
                 GEM_SLOTS.slice(0, Math.min(GEM_SLOTS.length, player.rebirths)).map((slot, index) =>
-                  h('i', { key: index, className: 'dq-crest-gem', style: { left: `${slot.x}%`, top: `${slot.y}%` } })))
+                  h('i', { key: index, className: 'dq-crest-gem', style: { left: `${slot.x}%`, top: `${slot.y}%` } }, '★')))
                 : null),
             h('span', { className: 'dq-hud-badge' }, player.level),
             player.paragon && player.paragon.stars > 0
