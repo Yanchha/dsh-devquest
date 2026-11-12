@@ -1291,6 +1291,11 @@ window.__ModuleLoader__.load({
       'talent.lore': '博识',
       'talent.greed': '贪婪',
       'talent.effect': '+{value}%',
+      'talent.perk.crit': '额外暴击 +{value}%',
+      'talent.perk.damage': '额外伤害 +{value}%',
+      'talent.perk.xp': '额外经验 +{value}%',
+      'talent.perk.coins': '额外星币 +{value}%',
+      'talent.perk.affix': '洗词条 -{value}%',
       'talent.reset': '重置天赋 · {cost}',
       'toast.error.no-talent-point': '没有可用天赋点。',
       'toast.error.talent-maxed': '这条分支已满阶。',
@@ -2194,6 +2199,11 @@ window.__ModuleLoader__.load({
       'talent.lore': 'Lore',
       'talent.greed': 'Greed',
       'talent.effect': '+{value}%',
+      'talent.perk.crit': 'Bonus crit +{value}%',
+      'talent.perk.damage': 'Bonus damage +{value}%',
+      'talent.perk.xp': 'Bonus XP +{value}%',
+      'talent.perk.coins': 'Bonus coins +{value}%',
+      'talent.perk.affix': 'Affix reroll -{value}%',
       'talent.reset': 'Reset talents · {cost}',
       'toast.error.no-talent-point': 'No talent points available.',
       'toast.error.talent-maxed': 'That branch is maxed.',
@@ -4025,6 +4035,20 @@ window.__ModuleLoader__.load({
       .dq-talent-effect { font-size: 9px; color: var(--dsw-alias-label-secondary); }
       .dq-talent-bar { margin-top: 4px; height: 3px; border-radius: 999px; background: color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent); overflow: hidden; }
       .dq-talent-bar i { display: block; height: 100%; border-radius: inherit; background: var(--talent-tone); }
+      .dq-talent-perks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+      .dq-talent-perk {
+        font-size: 8.5px; font-weight: 600; padding: 1px 6px; border-radius: 999px;
+        color: var(--dsw-alias-label-secondary);
+        border: 1px dashed color-mix(in srgb, var(--talent-tone) 28%, var(--dsw-alias-border-l1));
+        background: transparent; opacity: .6;
+      }
+      .dq-talent-perk.is-on {
+        opacity: 1; color: color-mix(in srgb, var(--talent-tone) 85%, #ffffff);
+        border-style: solid;
+        border-color: color-mix(in srgb, var(--talent-tone) 55%, transparent);
+        background: color-mix(in srgb, var(--talent-tone) 15%, transparent);
+        box-shadow: 0 0 10px color-mix(in srgb, var(--talent-tone) 30%, transparent);
+      }
       .dq-talent-add { width: 26px; padding: 2px 0; font-size: 13px; line-height: 1; }
       .dq-talent-foot { margin-top: 8px; text-align: right; }
       /* Affix lines under each equipped piece. */
@@ -7079,9 +7103,9 @@ window.__ModuleLoader__.load({
         const max = player.talentMax || 10
         const points = player.talentPoints || 0
         const branches = [
-          { key: 'sharp', step: 4, tone: '#ff6b6b', glyph: '⚔' },
-          { key: 'lore', step: 6, tone: '#7f9dff', glyph: '✦' },
-          { key: 'greed', step: 8, tone: '#f2c14e', glyph: '◈' },
+          { key: 'sharp', step: 4, tone: '#ff6b6b', glyph: '⚔', perks: [{ at: 3, text: 'talent.perk.crit', value: 4 }, { at: 6, text: 'talent.perk.damage', value: 10 }] },
+          { key: 'lore', step: 6, tone: '#7f9dff', glyph: '✦', perks: [{ at: 3, text: 'talent.perk.xp', value: 10 }, { at: 6, text: 'talent.perk.coins', value: 10 }] },
+          { key: 'greed', step: 8, tone: '#f2c14e', glyph: '◈', perks: [{ at: 3, text: 'talent.perk.coins', value: 12 }, { at: 6, text: 'talent.perk.affix', value: 10 }] },
         ]
         const spent = branches.reduce((sum, branch) => sum + (Number(talents[branch.key]) || 0), 0)
         return h('section', { className: 'dq-card dq-talent' },
@@ -7105,7 +7129,13 @@ window.__ModuleLoader__.load({
                     h('span', { className: 'dq-talent-rank' }, `${rank}/${max}`),
                     h('span', { className: 'dq-talent-effect' }, t('talent.effect', { value: rank * branch.step }))),
                   h('div', { className: 'dq-talent-bar' },
-                    h('i', { style: { width: `${Math.round((rank / max) * 100)}%` } }))),
+                    h('i', { style: { width: `${Math.round((rank / max) * 100)}%` } })),
+                  h('div', { className: 'dq-talent-perks' },
+                    branch.perks.map(perk => h('span', {
+                      key: perk.at,
+                      className: `dq-talent-perk${rank >= perk.at ? ' is-on' : ''}`,
+                      title: t(perk.text, { value: perk.value }),
+                    }, `${perk.at}★ ${t(perk.text, { value: perk.value })}`)))),
                 h('button', {
                   type: 'button',
                   className: 'dq-btn ghost dq-talent-add',

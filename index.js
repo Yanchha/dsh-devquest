@@ -1102,13 +1102,34 @@ function talentPoints(state) {
   return Math.max(0, lives - spent)
 }
 
+// Milestone perks: each branch unlocks two extra passives at 3 and 6 ranks.
+const TALENT_PERKS = [
+  { branch: 'sharp', at: 3, key: 'crit', value: 4, label: 'crit' },
+  { branch: 'sharp', at: 6, key: 'damage', value: 10, label: 'damage' },
+  { branch: 'lore', at: 3, key: 'xp', value: 10, label: 'xp' },
+  { branch: 'lore', at: 6, key: 'coins', value: 10, label: 'coins' },
+  { branch: 'greed', at: 3, key: 'coins', value: 12, label: 'coins' },
+  { branch: 'greed', at: 6, key: 'affix', value: 10, label: 'affix' },
+]
+
+function talentPerks(state) {
+  const talents = state.profile.talents || {}
+  return TALENT_PERKS.filter(perk => (Number(talents[perk.branch]) || 0) >= perk.at)
+}
+
 function talentBonus(state) {
   const talents = state.profile.talents || {}
-  return {
+  const base = {
     damage: Math.round((Number(talents.sharp) || 0) * TALENT_STEP.sharp),
     xp: Math.round((Number(talents.lore) || 0) * TALENT_STEP.lore),
     coins: Math.round((Number(talents.greed) || 0) * TALENT_STEP.greed),
+    crit: 0,
+    affix: 0,
   }
+  for (const perk of talentPerks(state)) {
+    if (perk.key in base) base[perk.key] += perk.value
+  }
+  return base
 }
 
 function normalizeState(raw) {
@@ -1655,7 +1676,8 @@ function damageAllBosses(state, base) {
   const affix = affixTotals(state)
   const sets = setTotals(state)
   const talent = talentBonus(state)
-  const crit = affix.crit > 0 && Math.random() * 100 < affix.crit ? 1.8 : 1
+  const critChance = affix.crit + (talent.crit || 0)
+  const crit = critChance > 0 && Math.random() * 100 < critChance ? 1.8 : 1
   const amount = Math.max(1, Math.round(Number(base)
     * (1 + gearPower(state) / 220)
     * (1 + classDamageBonus(state))
@@ -1857,7 +1879,7 @@ function gearView(state) {
         const list = state.gear.affixes?.[item.id] || []
         const locks = state.gear.affixLock?.[item.id] || []
         const locked = locks.filter(Boolean).length
-        const discount = setTotals(state).affixDiscount
+        const discount = Math.min(80, setTotals(state).affixDiscount + (talentBonus(state).affix || 0))
         return Math.round(affixCost(item.rarity, list.length) * (1 + locked * 0.5) * (1 - discount / 100))
       })(),
       affixLocks: Array.isArray(state.gear.affixLock?.[item.id]) ? state.gear.affixLock[item.id] : [],
@@ -1963,6 +1985,7 @@ function buildSnapshot(state) {
       talentMax: TALENT_MAX,
       talentPoints: talentPoints(state),
       talentBonus: talentBonus(state),
+      talentPerks: talentPerks(state).map(perk => perk.label),
       affix: affixTotals(state),
       sets: gearSets(state),
       setTotals: setTotals(state),
@@ -2321,7 +2344,7 @@ function applyAction(state, payload) {
       list.splice(weakest, 1)
       locks.splice(weakest, 1)
     }
-    const discount = setTotals(state).affixDiscount
+    const discount = Math.min(80, setTotals(state).affixDiscount + (talentBonus(state).affix || 0))
     const cost = Math.round(affixCost(item.rarity, list.length) * (1 + lockedCount * 0.5) * (1 - discount / 100))
     if (state.profile.coins < cost) return fail(state, 'not-enough-coins')
     state.profile.coins -= cost
